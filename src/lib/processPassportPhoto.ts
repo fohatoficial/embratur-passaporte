@@ -1,5 +1,5 @@
 import { detectFace, PhotoError, type FaceBox } from "./faceDetection";
-import { MASK_REFINEMENT, refineCutout } from "./maskRefine";
+import { refineCutout } from "./maskRefine";
 import {
   defaultTreatment,
   normalizeLightAndColor,
