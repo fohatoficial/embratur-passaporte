@@ -47,7 +47,7 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => vo
 
       <div className="relative w-full max-w-[56rem]">
         <div
-          className={`relative aspect-[5/7] w-full overflow-hidden rounded-[3rem] border-8 bg-brasil-blue-dark transition-colors duration-500 ${
+          className={`relative aspect-[2/3] w-full overflow-hidden rounded-[3rem] border-8 bg-brasil-blue-dark transition-colors duration-500 ${
             intense ? "border-brasil-yellow" : "border-border"
           }`}
           style={intense ? { boxShadow: "var(--shadow-glow)" } : undefined}
