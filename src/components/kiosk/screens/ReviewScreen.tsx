@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import { BrasilLogo } from "../BrasilLogo";
 import { TouchButton } from "../TouchButton";
 
@@ -8,6 +9,14 @@ type Props = {
 };
 
 export function ReviewScreen({ photo, onConfirm, onRetake }: Props) {
+  const [locked, setLocked] = useState(false);
+
+  const confirm = useCallback(() => {
+    if (locked) return;
+    setLocked(true);
+    onConfirm();
+  }, [locked, onConfirm]);
+
   return (
     <>
       <BrasilLogo className="w-[16rem]" />
@@ -32,8 +41,10 @@ export function ReviewScreen({ photo, onConfirm, onRetake }: Props) {
       </div>
 
       <div className="flex w-full max-w-[52rem] flex-col gap-8">
-        <TouchButton onClick={onConfirm}>Usar esta foto</TouchButton>
-        <TouchButton variant="ghost" onClick={onRetake}>
+        <TouchButton onClick={confirm} disabled={locked}>
+          {locked ? "Imprimindo..." : "Usar esta foto"}
+        </TouchButton>
+        <TouchButton variant="ghost" onClick={onRetake} disabled={locked}>
           Tirar outra
         </TouchButton>
       </div>
