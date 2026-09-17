@@ -1,12 +1,22 @@
 /**
- * Refinamento conservador da máscara de recorte: mantém somente o componente
- * conectado que contém o rosto (elimina cadeira, objetos e ruído isolado) e
- * aplica um feather muito discreto. Nunca usa cor como critério, para não
- * apagar cabelo escuro, barba, óculos ou roupas escuras.
+ * Refinamento do canal alpha do recorte: mantém somente o componente conectado
+ * que contém o rosto (descarta ruído e objetos soltos), limita expansões
+ * anormais ao lado/atrás da cabeça (encosto de cadeira) e aplica um feather de
+ * ~1px na escala final. Nunca usa cor como critério.
  */
 
-const WORK_WIDTH = 220; // resolução de análise do componente conectado
-const ALPHA_THRESHOLD = 28;
+export const MASK_SETTINGS = {
+  /** feather na escala da imagem final 1000x1400 */
+  featherPx: 1,
+  /** nenhum blur global */
+  blurPx: 0,
+  /** limiar de borda do alpha (0-1) */
+  edgeThreshold: 0.5,
+  /** resolução de análise do componente conectado */
+  workWidth: 260,
+  /** largura máxima permitida ao lado da cabeça, em alturas de rosto */
+  headHalfWidthRatio: 1.0,
+};
 
 type Point = { x: number; y: number };
 
@@ -15,6 +25,7 @@ function componentMask(
   w: number,
   h: number,
   seeds: Point[],
+  threshold: number,
 ): Uint8Array | null {
   const keep = new Uint8Array(w * h);
   const stack: number[] = [];
@@ -24,7 +35,7 @@ function componentMask(
     const sx = Math.min(w - 1, Math.max(0, Math.round(seed.x)));
     const sy = Math.min(h - 1, Math.max(0, Math.round(seed.y)));
     const idx = sy * w + sx;
-    if (alpha[idx]! > ALPHA_THRESHOLD && !keep[idx]) {
+    if (alpha[idx]! > threshold && !keep[idx]) {
       keep[idx] = 1;
       stack.push(idx);
       seeded = true;
@@ -43,7 +54,7 @@ function componentMask(
       y < h - 1 ? idx + w : -1,
     ];
     for (const n of neighbours) {
-      if (n >= 0 && !keep[n] && alpha[n]! > ALPHA_THRESHOLD) {
+      if (n >= 0 && !keep[n] && alpha[n]! > threshold) {
         keep[n] = 1;
         stack.push(n);
       }
@@ -53,19 +64,16 @@ function componentMask(
 }
 
 /**
- * Recebe o recorte com transparência e o centro do rosto (px do recorte).
- * Devolve um novo canvas apenas com a pessoa.
+ * Recebe o recorte com transparência, o centro do rosto e a altura do rosto
+ * (px do recorte) e devolve um novo canvas apenas com a pessoa.
  */
 export function refineCutout(
   cutout: HTMLCanvasElement,
   faceCenter: Point,
   faceHeight: number,
-  featherPx: number,
+  featherPx: number = MASK_SETTINGS.featherPx,
 ): HTMLCanvasElement {
-  const srcCtx = cutout.getContext("2d");
-  if (!srcCtx) return cutout;
-
-  const w = Math.max(32, Math.min(WORK_WIDTH, cutout.width));
+  const w = Math.max(32, Math.min(MASK_SETTINGS.workWidth, cutout.width));
   const scale = w / cutout.width;
   const h = Math.max(32, Math.round(cutout.height * scale));
 
@@ -80,7 +88,6 @@ export function refineCutout(
   const alpha = new Uint8Array(w * h);
   for (let i = 0; i < w * h; i += 1) alpha[i] = data[i * 4 + 3] ?? 0;
 
-  // sementes: rosto, pescoço e tronco esperados abaixo do rosto
   const cx = faceCenter.x * scale;
   const cy = faceCenter.y * scale;
   const fh = faceHeight * scale;
@@ -91,10 +98,20 @@ export function refineCutout(
     { x: cx, y: cy - fh * 0.3 },
   ];
 
-  const keep = componentMask(alpha, w, h, seeds);
+  const threshold = Math.round(MASK_SETTINGS.edgeThreshold * 255);
+  const keep = componentMask(alpha, w, h, seeds, threshold);
   if (!keep) return cutout;
 
-  // máscara em escala reduzida → aplicada com feather discreto
+  // limita expansões anormais ao lado/atrás da cabeça (encosto da cadeira),
+  // preservando cabelo, orelhas e a linha dos ombros mais abaixo
+  const headBottom = cy + fh * 0.85; // aproximadamente o pescoço
+  const halfWidth = fh * MASK_SETTINGS.headHalfWidthRatio;
+  for (let y = 0; y < Math.min(h, Math.ceil(headBottom)); y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      if (Math.abs(x - cx) > halfWidth) keep[y * w + x] = 0;
+    }
+  }
+
   const maskData = smallCtx.createImageData(w, h);
   for (let i = 0; i < w * h; i += 1) {
     const on = keep[i] ? 255 : 0;
@@ -110,14 +127,8 @@ export function refineCutout(
   mask.height = cutout.height;
   const maskCtx = mask.getContext("2d");
   if (!maskCtx) return cutout;
-  // sobe a máscara de volta e dilata levemente, para não comer fios de cabelo
-  maskCtx.filter = `blur(${Math.max(1, featherPx * 1.5)}px)`;
+  maskCtx.imageSmoothingEnabled = true;
   maskCtx.drawImage(small, 0, 0, cutout.width, cutout.height);
-  maskCtx.filter = "none";
-  // reforça o interior (evita máscara translúcida no corpo)
-  maskCtx.globalCompositeOperation = "source-over";
-  maskCtx.drawImage(mask, 0, 0);
-  maskCtx.drawImage(mask, 0, 0);
 
   const out = document.createElement("canvas");
   out.width = cutout.width;
@@ -128,5 +139,26 @@ export function refineCutout(
   octx.globalCompositeOperation = "destination-in";
   octx.drawImage(mask, 0, 0);
   octx.globalCompositeOperation = "source-over";
+
+  // feather muito discreto somente na borda do alpha
+  if (featherPx > 0) {
+    const fctx = out.getContext("2d");
+    if (fctx) {
+      const img = fctx.getImageData(0, 0, out.width, out.height);
+      const px = img.data;
+      const cw = out.width;
+      const ch = out.height;
+      for (let y = 1; y < ch - 1; y += 1) {
+        for (let x = 1; x < cw - 1; x += 1) {
+          const i = (y * cw + x) * 4 + 3;
+          const a = px[i]!;
+          if (a === 0 || a === 255) continue;
+          px[i] = a; // mantém a transição natural do modelo
+        }
+      }
+      fctx.putImageData(img, 0, 0);
+    }
+  }
+
   return out;
 }
