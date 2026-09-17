@@ -140,24 +140,21 @@ export function refineCutout(
   octx.drawImage(mask, 0, 0);
   octx.globalCompositeOperation = "source-over";
 
-  // feather muito discreto somente na borda do alpha
-  if (featherPx > 0) {
-    const fctx = out.getContext("2d");
-    if (fctx) {
-      const img = fctx.getImageData(0, 0, out.width, out.height);
-      const px = img.data;
-      const cw = out.width;
-      const ch = out.height;
-      for (let y = 1; y < ch - 1; y += 1) {
-        for (let x = 1; x < cw - 1; x += 1) {
-          const i = (y * cw + x) * 4 + 3;
-          const a = px[i]!;
-          if (a === 0 || a === 255) continue;
-          px[i] = a; // mantém a transição natural do modelo
-        }
-      }
-      fctx.putImageData(img, 0, 0);
+  // aperta a transição do alpha: elimina o halo largo do modelo e deixa
+  // apenas um feather estreito (~featherPx na imagem final)
+  const fctx = out.getContext("2d");
+  if (fctx) {
+    const img = fctx.getImageData(0, 0, out.width, out.height);
+    const px = img.data;
+    const t = MASK_SETTINGS.edgeThreshold * 255;
+    const width = Math.max(6, featherPx * 16); // faixa de transição em níveis de alpha
+    for (let i = 3; i < px.length; i += 4) {
+      const a = px[i]!;
+      if (a === 0 || a === 255) continue;
+      const v = (a - t) / width + 0.5;
+      px[i] = v <= 0 ? 0 : v >= 1 ? 255 : Math.round(v * v * (3 - 2 * v) * 255);
     }
+    fctx.putImageData(img, 0, 0);
   }
 
   return out;
