@@ -88,7 +88,7 @@ export async function fetchLastFailedJob(): Promise<PrintJob | null> {
     .eq("status", "failed")
     .order("failed_at", { ascending: false })
     .limit(1);
-  return ((data?.[0] as PrintJob | undefined) ?? null) satisfies PrintJob | null;
+  return (data?.[0] as PrintJob | undefined) ?? null;
 }
 
 export async function fetchLastJob(): Promise<PrintJob | null> {
