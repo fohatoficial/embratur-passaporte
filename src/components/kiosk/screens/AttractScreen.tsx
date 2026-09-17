@@ -7,7 +7,7 @@ export function AttractScreen({ onStart }: { onStart: () => void }) {
       <BrasilLogo className="animate-fade-up w-[24rem]" />
 
       <div className="animate-fade-up flex flex-col items-center gap-12 text-center">
-        <h1 className="font-display text-balance-kiosk text-[7rem] font-black uppercase leading-[0.92] tracking-tight">
+        <h1 className="font-display text-balance-kiosk max-w-[52rem] text-[5.75rem] font-black uppercase leading-[0.95] tracking-tight">
           Sua viagem para o Brasil começa aqui.
         </h1>
         <p className="max-w-[46rem] text-4xl font-medium leading-snug text-muted-foreground">

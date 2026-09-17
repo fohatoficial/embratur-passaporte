@@ -20,7 +20,7 @@ const balls: Ball[] = [
  */
 export function KioskFrame({ children }: { children: ReactNode }) {
   return (
-    <main className="relative h-screen w-screen overflow-hidden">
+    <main className="relative h-full w-full overflow-hidden">
       {/* organic KV blobs — edges only */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-48 top-[22%] h-[36rem] w-[36rem] rounded-full bg-brasil-cyan/25 blur-3xl" />
