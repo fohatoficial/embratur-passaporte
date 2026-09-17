@@ -14,13 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      print_jobs: {
+        Row: {
+          attempts: number
+          claimed_at: string | null
+          created_at: string
+          dedupe_key: string
+          error_message: string | null
+          failed_at: string | null
+          id: string
+          image_path: string
+          sent_at: string | null
+          station_id: string
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          claimed_at?: string | null
+          created_at?: string
+          dedupe_key: string
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          image_path: string
+          sent_at?: string | null
+          station_id: string
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          claimed_at?: string | null
+          created_at?: string
+          dedupe_key?: string
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          image_path?: string
+          sent_at?: string | null
+          station_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_print_jobs: { Args: never; Returns: number }
     }
     Enums: {
       [_ in never]: never
