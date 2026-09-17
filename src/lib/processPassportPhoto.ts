@@ -1,8 +1,7 @@
 import { detectFace, PhotoError, type FaceBox } from "./faceDetection";
-import { refineCutout } from "./maskRefine";
+import { MASK_SETTINGS, refineCutout } from "./maskRefine";
 import {
   defaultTreatment,
-  denoise,
   normalizeLightAndColor,
   sharpen,
   type TreatmentParams,
@@ -17,8 +16,8 @@ export const PHOTO_H = 1400; // 5:7
 export const TARGET_FACE_HEIGHT_RATIO = 0.34; // altura do rosto no canvas
 export const TARGET_EYE_Y_RATIO = 0.37; // altura dos olhos no canvas
 export const TOP_HEAD_MARGIN_RATIO = 0.06; // margem mínima acima do cabelo
+export const PERSON_SCALE_CORRECTION = 0.95; // pessoa ~5% menor
 const HAIR_ABOVE_FACE = 0.4; // cabelo estimado acima do bounding box facial
-const FEATHER_PX = 1.5; // feather na escala do canvas final
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -89,10 +88,10 @@ export function calculateDocumentFraming(
   // altura alvo: s * (sourceH - eyeY) >= PHOTO_H * (1 - TARGET_EYE_Y_RATIO)
   const bottomScale =
     (PHOTO_H * (1 - TARGET_EYE_Y_RATIO)) / Math.max(sourceH - face.eyeY, 1);
-  // e para cobrir a largura do canvas
   const widthScale = PHOTO_W / Math.max(sourceW, 1);
 
-  const scale = Math.max(faceScale, bottomScale, widthScale);
+  const scale =
+    Math.max(faceScale * PERSON_SCALE_CORRECTION, bottomScale, widthScale * 0.98);
 
   const dx = PHOTO_W / 2 - face.centerX * scale;
   let dy = PHOTO_H * TARGET_EYE_Y_RATIO - face.eyeY * scale;
@@ -105,6 +104,20 @@ export function calculateDocumentFraming(
   return { scale, dx, dy };
 }
 
+/** Tratamento leve aplicado somente à camada da pessoa (com transparência). */
+function treatPersonLayer(
+  person: HTMLCanvasElement,
+  params: TreatmentParams,
+): HTMLCanvasElement {
+  const ctx = person.getContext("2d");
+  if (!ctx) return person;
+  const imageData = ctx.getImageData(0, 0, person.width, person.height);
+  normalizeLightAndColor(imageData, params);
+  ctx.putImageData(imageData, 0, 0);
+  return sharpen(person, params);
+}
+
+/** Canvas branco puro (sem alpha) + pessoa desenhada por cima. */
 function compositeOnWhiteBackground(
   person: HTMLCanvasElement,
   framing: Framing,
@@ -112,7 +125,7 @@ function compositeOnWhiteBackground(
   const canvas = document.createElement("canvas");
   canvas.width = PHOTO_W;
   canvas.height = PHOTO_H;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d", { alpha: false });
   if (!ctx) throw new Error("Canvas indisponível.");
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, PHOTO_W, PHOTO_H);
@@ -128,37 +141,12 @@ function compositeOnWhiteBackground(
   return canvas;
 }
 
-function applyPhotoAdjustments(
-  canvas: HTMLCanvasElement,
-  face: FaceBox,
-  framing: Framing,
-  params: TreatmentParams,
-): HTMLCanvasElement {
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas indisponível.");
-
-  // médias medidas somente na área do rosto/tronco já composto
-  const statsRect = {
-    x: face.x * framing.scale + framing.dx,
-    y: face.y * framing.scale + framing.dy,
-    w: face.w * framing.scale,
-    h: face.h * framing.scale * 1.8,
-  };
-
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  normalizeLightAndColor(imageData, params, statsRect);
-  ctx.putImageData(imageData, 0, 0);
-
-  const cleaned = denoise(canvas, params);
-  return sharpen(cleaned, params);
-}
-
 const exportFinalJpeg = (canvas: HTMLCanvasElement) => canvas.toDataURL("image/jpeg", 0.94);
 
 /**
- * Sequência: captura original → rosto → remoção de fundo → refinamento da
- * máscara → canvas branco 5:7 com enquadramento pelo rosto → luz, cor, ruído
- * e nitidez → JPEG final.
+ * Sequência obrigatória: captura → rosto → segmentação → refinamento do alpha
+ * → tratamento leve apenas da pessoa → enquadramento → canvas branco puro →
+ * desenho da pessoa → JPEG final.
  */
 export async function processPassportPhoto(
   capture: string,
@@ -166,31 +154,29 @@ export async function processPassportPhoto(
 ): Promise<string> {
   const source = toCanvas(await loadImage(capture));
 
-  // 1. rosto na captura original (sem tratamento antes da segmentação)
+  // 1. rosto na captura original
   const face = await detectFace(source);
 
-  // 2. recorte da pessoa
+  // 2. segmentação da pessoa
   const cutout = await removeBackgroundOf(source);
 
-  // 3. refinamento da máscara na escala do recorte
+  // 3. refinamento do canal alpha
   const framing = calculateDocumentFraming(source.width, source.height, face);
   const cutoutScale = cutout.width / source.width;
-  const person = refineCutout(
+  const finalScale = framing.scale / cutoutScale;
+  const refined = refineCutout(
     cutout,
     { x: face.centerX * cutoutScale, y: face.centerY * cutoutScale },
     face.h * cutoutScale,
-    Math.max(1, FEATHER_PX / Math.max(framing.scale * cutoutScale, 0.01)),
+    Math.max(0.5, MASK_SETTINGS.featherPx / Math.max(finalScale, 0.01)),
   );
 
-  // 4. composição no branco 5:7 usando a transformação do rosto
-  const composed = compositeOnWhiteBackground(person, {
-    ...framing,
-    scale: framing.scale / cutoutScale,
-  });
+  // 4. tratamento leve somente na camada da pessoa
+  const person = treatPersonLayer(refined, params);
 
-  // 5. tratamento e exportação única
-  const finished = applyPhotoAdjustments(composed, face, framing, params);
-  return exportFinalJpeg(finished);
+  // 5. composição sobre branco puro e exportação única
+  const composed = compositeOnWhiteBackground(person, { ...framing, scale: finalScale });
+  return exportFinalJpeg(composed);
 }
 
 export const isPhotoError = (e: unknown): e is PhotoError => e instanceof PhotoError;
