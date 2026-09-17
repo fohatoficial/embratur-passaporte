@@ -1,9 +1,8 @@
-import demoPhoto from "@/assets/demo-photo.jpg";
 import { BrasilLogo } from "../BrasilLogo";
 import { TouchButton } from "../TouchButton";
 
 type Props = {
-  photo: string | null;
+  photo: string;
   onConfirm: () => void;
   onRetake: () => void;
 };
@@ -21,7 +20,7 @@ export function ReviewScreen({ photo, onConfirm, onRetake }: Props) {
         <div className="rounded-[1.5rem] bg-card p-6 shadow-[var(--shadow-touch)]">
           <div className="aspect-[5/7] w-[34rem] overflow-hidden bg-card">
             <img
-              src={photo ?? demoPhoto}
+              src={photo}
               alt="Prévia da sua foto para o passaporte"
               className="h-full w-full object-cover"
             />

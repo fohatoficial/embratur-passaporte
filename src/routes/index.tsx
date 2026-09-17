@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { KioskFrame } from "@/components/kiosk/KioskFrame";
 import { KioskViewport } from "@/components/kiosk/KioskViewport";
 import { AttractScreen } from "@/components/kiosk/screens/AttractScreen";
@@ -29,11 +29,31 @@ type Step = "attract" | "instructions" | "camera" | "processing" | "review" | "d
 
 function Kiosk() {
   const [step, setStep] = useState<Step>("attract");
+  const [capture, setCapture] = useState<string | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
 
-  const handleCaptured = useCallback((captured: string | null) => {
-    setPhoto(captured);
+  const handleCaptured = useCallback((captured: string) => {
+    setCapture(captured);
+    setPhoto(null);
     setStep("processing");
+  }, []);
+
+  const backToCamera = useCallback(() => {
+    setCapture(null);
+    setPhoto(null);
+    setStep("camera");
+  }, []);
+
+  const reset = useCallback(() => {
+    setCapture(null);
+    setPhoto(null);
+    setStep("attract");
+  }, []);
+
+  // limpeza ao desmontar: nada de foto guardada
+  useEffect(() => () => {
+    setCapture(null);
+    setPhoto(null);
   }, []);
 
   return (
@@ -42,25 +62,20 @@ function Kiosk() {
         {step === "attract" && <AttractScreen onStart={() => setStep("instructions")} />}
         {step === "instructions" && <InstructionsScreen onDone={() => setStep("camera")} />}
         {step === "camera" && <CameraScreen onCaptured={handleCaptured} />}
-        {step === "processing" && <ProcessingScreen onDone={() => setStep("review")} />}
-        {step === "review" && (
-          <ReviewScreen
-            photo={photo}
-            onConfirm={() => setStep("done")}
-            onRetake={() => {
-              setPhoto(null);
-              setStep("camera");
+        {step === "processing" && capture && (
+          <ProcessingScreen
+            capture={capture}
+            onDone={(processed) => {
+              setPhoto(processed);
+              setStep("review");
             }}
+            onBackToCamera={backToCamera}
           />
         )}
-        {step === "done" && (
-          <DoneScreen
-            onReset={() => {
-              setPhoto(null);
-              setStep("attract");
-            }}
-          />
+        {step === "review" && photo && (
+          <ReviewScreen photo={photo} onConfirm={() => setStep("done")} onRetake={backToCamera} />
         )}
+        {step === "done" && <DoneScreen onReset={reset} />}
       </KioskFrame>
     </KioskViewport>
   );

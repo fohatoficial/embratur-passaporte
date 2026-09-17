@@ -1,24 +1,40 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+export type CameraStatus = "idle" | "starting" | "live" | "error";
+
 /**
- * Webcam access for the kiosk. Falls back gracefully (status "unavailable")
- * so the experience keeps working with a placeholder preview.
- * Ready for future face detection / background removal steps.
+ * Webcam do totem. Sem modo demonstrativo: se o acesso falhar, o status vira
+ * "error" e nenhuma sequência avança até uma nova tentativa.
  */
 export function useCamera(active: boolean) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [status, setStatus] = useState<"idle" | "starting" | "live" | "unavailable">("idle");
+  const [status, setStatus] = useState<CameraStatus>("idle");
+  const [attempt, setAttempt] = useState(0);
+
+  const stop = useCallback(() => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+  }, []);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      stop();
+      setStatus("idle");
+      return;
+    }
     let cancelled = false;
 
     const start = async () => {
       setStatus("starting");
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 1080 }, height: { ideal: 1440 } },
+          video: {
+            facingMode: "user",
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
           audio: false,
         });
         if (cancelled) {
@@ -26,13 +42,35 @@ export function useCamera(active: boolean) {
           return;
         }
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play().catch(() => undefined);
+        const video = videoRef.current;
+        if (!video) {
+          stream.getTracks().forEach((t) => t.stop());
+          streamRef.current = null;
+          setStatus("error");
+          return;
         }
-        setStatus("live");
+        video.srcObject = stream;
+        await video.play().catch(() => undefined);
+
+        // só considera pronta quando há dimensões válidas e reprodução ativa
+        const waitReady = () =>
+          new Promise<void>((resolve) => {
+            const check = () => {
+              if (cancelled) return resolve();
+              if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
+                return resolve();
+              }
+              requestAnimationFrame(check);
+            };
+            check();
+          });
+        await waitReady();
+        if (!cancelled) setStatus("live");
       } catch {
-        if (!cancelled) setStatus("unavailable");
+        if (!cancelled) {
+          stop();
+          setStatus("error");
+        }
       }
     };
 
@@ -40,35 +78,35 @@ export function useCamera(active: boolean) {
 
     return () => {
       cancelled = true;
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-      setStatus("idle");
+      stop();
     };
-  }, [active]);
+  }, [active, attempt, stop]);
 
-  /** Captures the current frame cropped to 5x7 (document photo ratio). */
+  const retry = useCallback(() => {
+    stop();
+    setStatus("starting");
+    setAttempt((a) => a + 1);
+  }, [stop]);
+
+  /** Captura o frame atual em resolução nativa, já espelhado como no preview. */
   const capture = useCallback((): string | null => {
     const video = videoRef.current;
-    if (!video || status !== "live" || !video.videoWidth) return null;
+    if (!video || status !== "live" || !video.videoWidth || !video.videoHeight) return null;
 
-    const targetW = 1000;
-    const targetH = 1400;
+    const w = video.videoWidth;
+    const h = video.videoHeight;
     const canvas = document.createElement("canvas");
-    canvas.width = targetW;
-    canvas.height = targetH;
+    canvas.width = w;
+    canvas.height = h;
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
 
-    const scale = Math.max(targetW / video.videoWidth, targetH / video.videoHeight);
-    const drawW = video.videoWidth * scale;
-    const drawH = video.videoHeight * scale;
+    ctx.translate(w, 0);
+    ctx.scale(-1, 1); // espelhado, igual ao preview visto pelo visitante
+    ctx.drawImage(video, 0, 0, w, h);
 
-    ctx.translate(targetW, 0);
-    ctx.scale(-1, 1); // mirror, matching the on-screen preview
-    ctx.drawImage(video, (targetW - drawW) / 2, (targetH - drawH) / 2, drawW, drawH);
-
-    return canvas.toDataURL("image/jpeg", 0.92);
+    return canvas.toDataURL("image/jpeg", 0.98);
   }, [status]);
 
-  return { videoRef, status, capture };
+  return { videoRef, status, capture, retry, stop };
 }
