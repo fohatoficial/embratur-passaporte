@@ -2,15 +2,23 @@ import { useEffect, useRef, useState } from "react";
 import { useCamera } from "@/hooks/useCamera";
 import { BrasilLogo } from "../BrasilLogo";
 import { FaceGuide } from "../FaceGuide";
+import { TouchButton } from "../TouchButton";
 
-export function CameraScreen({ onCaptured }: { onCaptured: (photo: string | null) => void }) {
-  const { videoRef, status, capture } = useCamera(true);
+export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => void }) {
+  const { videoRef, status, capture, retry } = useCamera(true);
   const [count, setCount] = useState<number | null>(null);
   const [flash, setFlash] = useState(false);
   const captureRef = useRef(capture);
   captureRef.current = capture;
 
+  // a contagem só começa quando o vídeo está realmente reproduzindo
   useEffect(() => {
+    if (status !== "live") {
+      setCount(null);
+      setFlash(false);
+      return;
+    }
+
     const timers: ReturnType<typeof setTimeout>[] = [];
     timers.push(setTimeout(() => setCount(5), 1800));
     for (let i = 1; i <= 4; i += 1) {
@@ -20,15 +28,16 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string | null
       setTimeout(() => {
         setCount(null);
         setFlash(true);
+        const shot = captureRef.current();
+        timers.push(
+          setTimeout(() => {
+            if (shot) onCaptured(shot);
+          }, 450),
+        );
       }, 1800 + 5000),
     );
-    timers.push(
-      setTimeout(() => {
-        onCaptured(captureRef.current());
-      }, 1800 + 5450),
-    );
     return () => timers.forEach(clearTimeout);
-  }, [onCaptured]);
+  }, [status, onCaptured]);
 
   const intense = count !== null && count <= 2;
 
@@ -51,19 +60,28 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string | null
             className="h-full w-full scale-x-[-1] object-cover"
           />
 
-          {status !== "live" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 bg-brasil-blue-deep">
-              <div className="h-56 w-56 rounded-full bg-secondary" />
-              <div className="h-72 w-[26rem] rounded-t-[10rem] bg-secondary" />
-              <p className="absolute bottom-12 text-3xl font-semibold uppercase tracking-widest text-muted-foreground">
-                {status === "unavailable" ? "Pré-visualização simulada" : "Iniciando câmera"}
+          {status === "starting" && (
+            <div className="absolute inset-0 flex items-center justify-center bg-brasil-blue-deep">
+              <p className="text-3xl font-semibold uppercase tracking-widest text-muted-foreground">
+                Iniciando câmera
               </p>
             </div>
           )}
 
-          <div className="absolute inset-0 p-10">
-            <FaceGuide intense={intense} />
-          </div>
+          {status === "error" && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-14 bg-brasil-blue-deep px-14 text-center">
+              <p className="font-display text-5xl font-black uppercase leading-tight">
+                Não foi possível acessar a câmera.
+              </p>
+              <TouchButton onClick={retry}>Tentar novamente</TouchButton>
+            </div>
+          )}
+
+          {status === "live" && (
+            <div className="absolute inset-0 p-10">
+              <FaceGuide intense={intense} />
+            </div>
+          )}
 
           {count !== null && (
             <div className="absolute inset-0 flex items-center justify-center bg-brasil-blue-dark/35">
