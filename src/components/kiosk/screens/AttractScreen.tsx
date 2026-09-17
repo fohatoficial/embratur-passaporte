@@ -17,7 +17,7 @@ export function AttractScreen({ onStart }: { onStart: () => void }) {
 
       <div className="relative w-full max-w-[52rem]">
         <div className="animate-pulse-ring absolute inset-0 rounded-full bg-primary/40 blur-2xl" />
-        <TouchButton onClick={onStart} className="relative py-16 text-6xl">
+        <TouchButton onClick={onStart} className="relative py-16 text-[3.25rem]">
           Toque para iniciar
         </TouchButton>
       </div>

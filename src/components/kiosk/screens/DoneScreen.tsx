@@ -12,15 +12,15 @@ export function DoneScreen({ onReset }: { onReset: () => void }) {
       <BrasilLogo className="animate-fade-up w-[22rem]" />
 
       <div className="animate-fade-up flex flex-col items-center gap-12 text-center">
-        <div className="relative">
-          <span className="font-display block text-[12rem] font-black uppercase leading-none">
-            Pronto!
-          </span>
+        <div className="flex flex-col items-center gap-8">
           <span
-            className="animate-stamp font-display absolute -right-16 -top-10 rounded-[1.5rem] border-8 border-brasil-green-light px-8 py-4 text-4xl font-black uppercase tracking-widest text-brasil-green-light"
+            className="animate-stamp font-display rounded-[1.5rem] border-8 border-brasil-green-light px-10 py-4 text-4xl font-black uppercase tracking-widest text-brasil-green-light"
             style={{ animationDelay: "0.3s" }}
           >
             Brasil 2027
+          </span>
+          <span className="font-display block text-[12rem] font-black uppercase leading-none">
+            Pronto!
           </span>
         </div>
 

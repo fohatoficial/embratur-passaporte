@@ -66,13 +66,13 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string | null
           </div>
 
           {count !== null && (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center bg-brasil-blue-dark/35">
               <span
                 key={count}
                 className={`font-display animate-count-in text-[22rem] font-black leading-none ${
                   intense ? "text-brasil-yellow" : "text-foreground"
                 }`}
-                style={{ textShadow: "0 0 6rem oklch(0.2 0.08 253 / 70%)" }}
+                style={{ textShadow: "0 0 5rem oklch(0.2 0.08 253 / 85%)" }}
               >
                 {count}
               </span>
