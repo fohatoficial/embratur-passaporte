@@ -160,18 +160,14 @@ export async function processPassportPhoto(
   // 2. segmentação da pessoa
   const cutout = await removeBackgroundOf(source);
 
-  // 3. refinamento do canal alpha
+  // 3. limpeza da máscara
   const framing = calculateDocumentFraming(source.width, source.height, face);
   const cutoutScale = cutout.width / source.width;
   const finalScale = framing.scale / cutoutScale;
-  const toCutoutPx = (px: number) => px / Math.max(finalScale, 0.01);
   const refined = refineCutout(
     cutout,
     { x: face.centerX * cutoutScale, y: face.centerY * cutoutScale },
     face.h * cutoutScale,
-    Math.max(0.5, toCutoutPx(MASK_REFINEMENT.featherPx)),
-    Math.max(0.2, toCutoutPx(MASK_REFINEMENT.erosionPx)),
-    Math.max(0.1, toCutoutPx(MASK_REFINEMENT.erosionPxHair)),
   );
 
   // 4. tratamento leve somente na camada da pessoa
