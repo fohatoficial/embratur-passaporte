@@ -8,6 +8,13 @@
       "when": 1789688647233,
       "tag": "0000_create_print_jobs_queue",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789688664223,
+      "tag": "0001_print_jobs_storage_policies",
+      "breakpoints": true
     }
   ]
 }
