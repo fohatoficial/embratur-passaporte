@@ -79,9 +79,10 @@ export function normalizeLightAndColor(data: ImageData, p = defaultTreatment) {
   const ab = sb / count;
   const gray = (ar + ag + ab) / 3;
 
-  const wbR = 1 + (gray / Math.max(ar, 1) - 1) * p.whiteBalanceStrength;
+  const temp = p.temperature ?? 0;
+  const wbR = (1 + (gray / Math.max(ar, 1) - 1) * p.whiteBalanceStrength) * (1 + temp);
   const wbG = 1 + (gray / Math.max(ag, 1) - 1) * p.whiteBalanceStrength;
-  const wbB = 1 + (gray / Math.max(ab, 1) - 1) * p.whiteBalanceStrength;
+  const wbB = (1 + (gray / Math.max(ab, 1) - 1) * p.whiteBalanceStrength) * (1 - temp);
 
   const luma = gray / 255;
   const rawGain = p.targetLuma / Math.max(luma, 0.05);
