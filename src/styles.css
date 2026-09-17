@@ -249,13 +249,13 @@
   animation: kiosk-stamp 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* ---------- Impressão KODAK 6900 · 4x6 pol ---------- */
+/* ---------- Impressão KODAK 6900 · tira 2x6 pol ---------- */
 .kiosk-print-area {
   display: none;
 }
 
 @page {
-  size: 4in 6in;
+  size: 2in 6in;
   margin: 0;
 }
 
@@ -265,7 +265,7 @@
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
-    width: 4in;
+    width: 2in;
     height: 6in;
     overflow: hidden;
   }
@@ -279,7 +279,7 @@
     position: absolute;
     top: 0;
     left: 0;
-    width: 4in;
+    width: 2in;
     height: 6in;
     margin: 0;
     padding: 0;
@@ -288,8 +288,9 @@
 
   .kiosk-print-area img {
     display: block;
-    width: 4in;
+    width: 2in;
     height: 6in;
-    object-fit: cover;
+    margin: 0;
+    padding: 0;
   }
 }

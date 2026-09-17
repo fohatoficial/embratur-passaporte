@@ -2,15 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 /**
- * Área exclusiva de impressão (4x6 pol, portrait, margem 0).
+ * Área exclusiva de impressão (tira 2x6 pol, portrait, margem 0).
  * Fica fora da árvore visual do totem (portal no body) e só aparece
  * dentro de @media print. Não faz nenhum processamento de imagem.
  */
 export function PrintArea({
-  photo,
+  document: strip,
   onReady,
 }: {
-  photo: string;
+  document: string;
   onReady: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
@@ -51,13 +51,13 @@ export function PrintArea({
     return () => {
       cancelled = true;
     };
-  }, [mounted, photo]);
+  }, [mounted, strip]);
 
   if (!mounted) return null;
 
   return createPortal(
     <div className="kiosk-print-area">
-      <img ref={imgRef} src={photo} alt="" />
+      <img ref={imgRef} src={strip} alt="" />
     </div>,
     document.body,
   );
