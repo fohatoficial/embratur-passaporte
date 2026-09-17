@@ -51,9 +51,9 @@ export function normalizeLightAndColor(data: ImageData, p = defaultTreatment) {
   let sb = 0;
   let count = 0;
   for (let i = 0; i < n; i += 4 * 7) {
-    sr += px[i];
-    sg += px[i + 1];
-    sb += px[i + 2];
+    sr += px[i]!;
+    sg += px[i + 1]!;
+    sb += px[i + 2]!;
     count += 1;
   }
   const ar = sr / count;
@@ -72,9 +72,9 @@ export function normalizeLightAndColor(data: ImageData, p = defaultTreatment) {
   const gain = 1 + (Math.min(Math.max(rawGain, 0.75), 1.45) - 1) * p.exposureStrength;
 
   for (let i = 0; i < n; i += 4) {
-    let r = px[i] * wbR * gain;
-    let g = px[i + 1] * wbG * gain;
-    let b = px[i + 2] * wbB * gain;
+    let r = px[i]! * wbR * gain;
+    let g = px[i + 1]! * wbG * gain;
+    let b = px[i + 2]! * wbB * gain;
 
     // sombras e altas luzes
     for (let c = 0; c < 3; c += 1) {
