@@ -19,6 +19,8 @@ export type TreatmentParams = {
   saturation: number;
   /** nitidez final (0-1) */
   sharpenAmount: number;
+  /** temperatura relativa (negativo = menos quente) */
+  temperature: number;
 };
 
 /** Ajuste final de cor: pele um pouco menos quente e menos saturada. */
