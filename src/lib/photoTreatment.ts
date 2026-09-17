@@ -127,20 +127,34 @@ export function sharpen(
   p = defaultTreatment,
 ): HTMLCanvasElement {
   if (p.sharpenAmount <= 0) return source;
-  const out = document.createElement("canvas");
-  out.width = source.width;
-  out.height = source.height;
-  const ctx = out.getContext("2d");
+  const ctx = source.getContext("2d");
   if (!ctx) return source;
 
-  ctx.drawImage(source, 0, 0);
-  // camada de contraste local muito suave
-  ctx.globalCompositeOperation = "overlay";
-  ctx.globalAlpha = p.sharpenAmount * 0.5;
-  ctx.filter = "blur(1.2px) invert(1)";
-  ctx.drawImage(source, 0, 0);
-  ctx.filter = "none";
-  ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = "source-over";
-  return out;
+  const { width: w, height: h } = source;
+  const src = ctx.getImageData(0, 0, w, h);
+  const out = ctx.createImageData(w, h);
+  const a = p.sharpenAmount;
+
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      const i = (y * w + x) * 4;
+      for (let c = 0; c < 3; c += 1) {
+        const center = src.data[i + c] ?? 0;
+        if (x === 0 || y === 0 || x === w - 1 || y === h - 1) {
+          out.data[i + c] = center;
+          continue;
+        }
+        const up = src.data[i - w * 4 + c] ?? center;
+        const down = src.data[i + w * 4 + c] ?? center;
+        const left = src.data[i - 4 + c] ?? center;
+        const right = src.data[i + 4 + c] ?? center;
+        const lap = center * 4 - (up + down + left + right);
+        out.data[i + c] = clamp255(center + lap * a * 0.25);
+      }
+      out.data[i + 3] = src.data[i + 3] ?? 255;
+    }
+  }
+
+  ctx.putImageData(out, 0, 0);
+  return source;
 }
