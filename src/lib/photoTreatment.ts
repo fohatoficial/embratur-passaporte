@@ -19,18 +19,31 @@ export type TreatmentParams = {
   saturation: number;
   /** nitidez final (0-1) */
   sharpenAmount: number;
+  /** temperatura relativa (negativo = menos quente) */
+  temperature: number;
+};
+
+/** Ajuste final de cor: pele um pouco menos quente e menos saturada. */
+export const FINAL_COLOR_ADJUSTMENTS = {
+  temperature: -0.02,
+  saturation: -0.02,
+  highlights: -0.03,
+  exposure: 0,
+  contrast: 0.01,
 };
 
 /** Valores conservadores, ajustáveis após os testes reais no totem. */
 export const defaultTreatment: TreatmentParams = {
   targetLuma: 0.55,
   exposureStrength: 0.15,
-  whiteBalanceStrength: 0.25,
+  whiteBalanceStrength: 0.3,
   shadowLift: 0.03,
-  highlightRolloff: 0.03,
-  contrast: 1.03,
-  saturation: 1.01,
-  sharpenAmount: 0.05,
+  highlightRolloff: 0.06,
+  contrast: 1.01,
+  saturation: 0.98,
+  sharpenAmount: 0.04,
+  /** leve deslocamento de temperatura (negativo = menos quente) */
+  temperature: -0.02,
 };
 
 /** Sem suavização de pele e sem redução de ruído: textura é prioridade. */
@@ -66,9 +79,10 @@ export function normalizeLightAndColor(data: ImageData, p = defaultTreatment) {
   const ab = sb / count;
   const gray = (ar + ag + ab) / 3;
 
-  const wbR = 1 + (gray / Math.max(ar, 1) - 1) * p.whiteBalanceStrength;
+  const temp = p.temperature ?? 0;
+  const wbR = (1 + (gray / Math.max(ar, 1) - 1) * p.whiteBalanceStrength) * (1 + temp);
   const wbG = 1 + (gray / Math.max(ag, 1) - 1) * p.whiteBalanceStrength;
-  const wbB = 1 + (gray / Math.max(ab, 1) - 1) * p.whiteBalanceStrength;
+  const wbB = (1 + (gray / Math.max(ab, 1) - 1) * p.whiteBalanceStrength) * (1 - temp);
 
   const luma = gray / 255;
   const rawGain = p.targetLuma / Math.max(luma, 0.05);
