@@ -6,7 +6,7 @@
  */
 
 export const MASK_SETTINGS = {
-  /** feather na escala da imagem final 1000x1400 */
+  /** feather na escala da imagem final 1200x1800 */
   featherPx: 1,
   /** nenhum blur global */
   blurPx: 0,

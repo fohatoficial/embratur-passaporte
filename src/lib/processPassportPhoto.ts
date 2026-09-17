@@ -9,11 +9,11 @@ import {
 
 export { PhotoError } from "./faceDetection";
 
-export const PHOTO_W = 1000;
-export const PHOTO_H = 1400; // 5:7
+export const PHOTO_W = 1200;
+export const PHOTO_H = 1800; // 2:3 (4x6 pol)
 
 /** Constantes de enquadramento — ajustáveis após os testes reais. */
-export const TARGET_FACE_HEIGHT_RATIO = 0.34; // altura do rosto no canvas
+export const TARGET_FACE_HEIGHT_RATIO = 0.32; // altura do rosto no canvas
 export const TARGET_EYE_Y_RATIO = 0.37; // altura dos olhos no canvas
 export const TOP_HEAD_MARGIN_RATIO = 0.06; // margem mínima acima do cabelo
 export const PERSON_SCALE_CORRECTION = 0.95; // pessoa ~5% menor

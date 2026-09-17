@@ -7,6 +7,7 @@ import { InstructionsScreen } from "@/components/kiosk/screens/InstructionsScree
 import { CameraScreen } from "@/components/kiosk/screens/CameraScreen";
 import { ProcessingScreen } from "@/components/kiosk/screens/ProcessingScreen";
 import { ReviewScreen } from "@/components/kiosk/screens/ReviewScreen";
+import { PrintingScreen } from "@/components/kiosk/screens/PrintingScreen";
 import { DoneScreen } from "@/components/kiosk/screens/DoneScreen";
 
 const title = "Brasil 2027 · Sua foto para o passaporte | EMBRATUR";
@@ -25,7 +26,14 @@ export const Route = createFileRoute("/")({
   component: Kiosk,
 });
 
-type Step = "attract" | "instructions" | "camera" | "processing" | "review" | "done";
+type Step =
+  | "attract"
+  | "instructions"
+  | "camera"
+  | "processing"
+  | "review"
+  | "printing"
+  | "done";
 
 function Kiosk() {
   const [step, setStep] = useState<Step>("attract");
@@ -73,7 +81,14 @@ function Kiosk() {
           />
         )}
         {step === "review" && photo && (
-          <ReviewScreen photo={photo} onConfirm={() => setStep("done")} onRetake={backToCamera} />
+          <ReviewScreen
+            photo={photo}
+            onConfirm={() => setStep("printing")}
+            onRetake={backToCamera}
+          />
+        )}
+        {step === "printing" && photo && (
+          <PrintingScreen photo={photo} onFinished={() => setStep("done")} />
         )}
         {step === "done" && <DoneScreen onReset={reset} />}
       </KioskFrame>
