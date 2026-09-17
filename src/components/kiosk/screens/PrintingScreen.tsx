@@ -1,75 +1,97 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BrasilLogo } from "../BrasilLogo";
-import { PrintArea } from "../PrintArea";
+import { TouchButton } from "../TouchButton";
 import { buildPrintStrip } from "@/lib/buildPrintStrip";
+import { enqueuePrintJob, fetchJob, type PrintJobStatus } from "@/lib/printQueue";
+import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
   photo: string;
   onFinished: () => void;
 };
 
-type PrintState = "idle" | "preparing" | "printing" | "completed";
+type Phase = "sending" | "queued" | "processing" | "sent" | "error";
+
+const headline: Record<Phase, string> = {
+  sending: "Enviando sua foto para impressão",
+  queued: "Enviando sua foto para impressão",
+  processing: "Preparando sua impressão",
+  sent: "Sua foto foi enviada para a impressora",
+  error: "Não foi possível enviar sua foto",
+};
 
 /**
- * Monta a tira de impressão 2x6 a partir da foto aprovada e envia um único
- * trabalho de impressão por captura.
+ * O totem não imprime: monta o documento 2x6 e o envia para a fila da
+ * estação de impressão, acompanhando o status até "sent".
  */
 export function PrintingScreen({ photo, onFinished }: Props) {
-  const [state, setState] = useState<PrintState>("idle");
-  const [strip, setStrip] = useState<string | null>(null);
-  const stateRef = useRef<PrintState>("idle");
-  const finishedRef = useRef(false);
+  const [phase, setPhase] = useState<Phase>("sending");
+  const [attempt, setAttempt] = useState(0);
+  const jobIdRef = useRef<string>(crypto.randomUUID());
+  const stripRef = useRef<string | null>(null);
   const doneRef = useRef(onFinished);
   doneRef.current = onFinished;
 
-  const setPrintState = useCallback((next: PrintState) => {
-    stateRef.current = next;
-    setState(next);
-  }, []);
-
-  const finish = useCallback(() => {
-    if (finishedRef.current) return;
-    finishedRef.current = true;
-    setPrintState("completed");
-    setStrip(null);
-    doneRef.current();
-  }, [setPrintState]);
-
-  // idle -> preparing: gera a tira sem reprocessar a fotografia
+  // envio (idempotente: mesma dedupe_key em cada tentativa)
   useEffect(() => {
-    if (stateRef.current !== "idle") return;
-    setPrintState("preparing");
     let cancelled = false;
+    setPhase("sending");
+
     void (async () => {
       try {
-        const doc = await buildPrintStrip(photo);
-        if (!cancelled) setStrip(doc);
+        if (!stripRef.current) stripRef.current = await buildPrintStrip(photo);
+        const job = await enqueuePrintJob(jobIdRef.current, stripRef.current);
+        if (cancelled) return;
+        setPhase(job.status === "pending" ? "queued" : mapStatus(job.status));
       } catch {
-        if (!cancelled) finish();
+        if (!cancelled) setPhase("error");
       }
     })();
+
     return () => {
       cancelled = true;
     };
-  }, [photo, finish, setPrintState]);
+  }, [photo, attempt]);
 
+  // acompanhamento do status: realtime + verificação periódica
   useEffect(() => {
-    const onAfterPrint = () => finish();
-    window.addEventListener("afterprint", onAfterPrint);
-    // fallback: nunca dispara uma segunda impressão, apenas encerra a tela
-    const fallback = setTimeout(finish, 20000);
-    return () => {
-      window.removeEventListener("afterprint", onAfterPrint);
-      clearTimeout(fallback);
-    };
-  }, [finish]);
+    if (phase !== "queued" && phase !== "processing") return;
+    const jobId = jobIdRef.current;
+    let cancelled = false;
 
-  // única transição preparing -> printing que pode chamar window.print()
-  const print = useCallback(() => {
-    if (stateRef.current !== "preparing") return;
-    setPrintState("printing");
-    window.print();
-  }, [setPrintState]);
+    const apply = (status: PrintJobStatus) => {
+      if (!cancelled) setPhase(mapStatus(status));
+    };
+
+    const channel = supabase
+      .channel(`print-job-${jobId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "print_jobs", filter: `id=eq.${jobId}` },
+        (payload) => apply((payload.new as { status: PrintJobStatus }).status),
+      )
+      .subscribe();
+
+    const poll = setInterval(() => {
+      void fetchJob(jobId).then((job) => job && apply(job.status));
+    }, 3000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(poll);
+      supabase.removeChannel(channel);
+    };
+  }, [phase]);
+
+  // encerra a jornada alguns segundos após a confirmação
+  useEffect(() => {
+    if (phase !== "sent") return;
+    stripRef.current = null;
+    const timer = setTimeout(() => doneRef.current(), 4000);
+    return () => clearTimeout(timer);
+  }, [phase]);
+
+  const retry = useCallback(() => setAttempt((a) => a + 1), []);
 
   return (
     <>
@@ -77,19 +99,34 @@ export function PrintingScreen({ photo, onFinished }: Props) {
 
       <div className="animate-fade-up flex flex-col items-center gap-14 text-center">
         <div className="gradient-brasil-bar h-4 w-[32rem] rounded-full" />
-        <h1 className="font-display text-[6rem] font-black uppercase leading-none">
-          Imprimindo sua foto
+        <h1 className="font-display text-[5.5rem] font-black uppercase leading-none">
+          {headline[phase]}
         </h1>
         <p className="max-w-[46rem] text-4xl font-medium text-muted-foreground">
-          {state === "printing" ? "Enviando para a impressora." : "Aguarde alguns instantes."}
+          {phase === "error"
+            ? "Verifique a conexão e toque para tentar novamente."
+            : phase === "sent"
+              ? "Retire sua foto na estação de impressão."
+              : "Aguarde alguns instantes."}
         </p>
       </div>
 
-      <p className="text-3xl font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-        Passaporte · 5x5
-      </p>
-
-      {strip && <PrintArea document={strip} onReady={print} />}
+      {phase === "error" ? (
+        <div className="flex w-full max-w-[52rem] flex-col gap-8">
+          <TouchButton onClick={retry}>Tentar novamente</TouchButton>
+        </div>
+      ) : (
+        <p className="text-3xl font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+          Passaporte · 5x5
+        </p>
+      )}
     </>
   );
+}
+
+function mapStatus(status: PrintJobStatus): Phase {
+  if (status === "sent") return "sent";
+  if (status === "processing") return "processing";
+  if (status === "failed" || status === "cancelled") return "error";
+  return "queued";
 }
