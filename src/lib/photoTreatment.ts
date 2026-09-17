@@ -40,8 +40,18 @@ export const defaultTreatment: TreatmentParams = {
 
 const clamp255 = (v: number) => (v < 0 ? 0 : v > 255 ? 255 : v);
 
-/** Correção de luz e cor aplicada in-place no ImageData. */
-export function normalizeLightAndColor(data: ImageData, p = defaultTreatment) {
+export type StatsRect = { x: number; y: number; w: number; h: number };
+
+/**
+ * Correção de luz e cor aplicada in-place no ImageData.
+ * `statsRect` limita o cálculo das médias a uma região (a pessoa), para o fundo
+ * branco não distorcer a exposição e o balanço de branco.
+ */
+export function normalizeLightAndColor(
+  data: ImageData,
+  p = defaultTreatment,
+  statsRect?: StatsRect,
+) {
   const px = data.data;
   const n = px.length;
 
@@ -50,11 +60,31 @@ export function normalizeLightAndColor(data: ImageData, p = defaultTreatment) {
   let sg = 0;
   let sb = 0;
   let count = 0;
-  for (let i = 0; i < n; i += 4 * 7) {
-    sr += px[i]!;
-    sg += px[i + 1]!;
-    sb += px[i + 2]!;
-    count += 1;
+  if (statsRect) {
+    const x0 = Math.max(0, Math.round(statsRect.x));
+    const y0 = Math.max(0, Math.round(statsRect.y));
+    const x1 = Math.min(data.width, Math.round(statsRect.x + statsRect.w));
+    const y1 = Math.min(data.height, Math.round(statsRect.y + statsRect.h));
+    for (let y = y0; y < y1; y += 2) {
+      for (let x = x0; x < x1; x += 2) {
+        const i = (y * data.width + x) * 4;
+        sr += px[i]!;
+        sg += px[i + 1]!;
+        sb += px[i + 2]!;
+        count += 1;
+      }
+    }
+  }
+  if (count === 0) {
+    sr = 0;
+    sg = 0;
+    sb = 0;
+    for (let i = 0; i < n; i += 4 * 7) {
+      sr += px[i]!;
+      sg += px[i + 1]!;
+      sb += px[i + 2]!;
+      count += 1;
+    }
   }
   const ar = sr / count;
   const ag = sg / count;
