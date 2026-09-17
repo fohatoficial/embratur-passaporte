@@ -10,12 +10,12 @@ import {
 export { PhotoError } from "./faceDetection";
 
 export const PHOTO_W = 1200;
-export const PHOTO_H = 1800; // 2:3 (4x6 pol)
+export const PHOTO_H = 1200; // 1:1 (corte físico 5x5 cm)
 
 /** Constantes de enquadramento — ajustáveis após os testes reais. */
-export const TARGET_FACE_HEIGHT_RATIO = 0.32; // altura do rosto no canvas
-export const TARGET_EYE_Y_RATIO = 0.37; // altura dos olhos no canvas
-export const TOP_HEAD_MARGIN_RATIO = 0.06; // margem mínima acima do cabelo
+export const TARGET_FACE_HEIGHT_RATIO = 0.55; // altura do rosto no canvas
+export const TARGET_EYE_Y_RATIO = 0.44; // altura dos olhos no canvas
+export const TOP_HEAD_MARGIN_RATIO = 0.08; // margem mínima acima do cabelo
 export const PERSON_SCALE_CORRECTION = 0.95; // pessoa ~5% menor
 const HAIR_ABOVE_FACE = 0.4; // cabelo estimado acima do bounding box facial
 
@@ -73,7 +73,7 @@ async function removeBackgroundOf(canvas: HTMLCanvasElement) {
 export type Framing = { scale: number; dx: number; dy: number };
 
 /**
- * Escala e deslocamento da captura completa sobre o canvas 5:7, calculados
+ * Escala e deslocamento da captura completa sobre o canvas 1:1, calculados
  * pelo rosto: olhos na altura alvo, margem acima do cabelo e tronco atingindo
  * a borda inferior (sem faixa branca nem corte horizontal).
  */
