@@ -21,16 +21,27 @@ export type TreatmentParams = {
   sharpenAmount: number;
 };
 
+/** Ajuste final de cor: pele um pouco menos quente e menos saturada. */
+export const FINAL_COLOR_ADJUSTMENTS = {
+  temperature: -0.02,
+  saturation: -0.02,
+  highlights: -0.03,
+  exposure: 0,
+  contrast: 0.01,
+};
+
 /** Valores conservadores, ajustáveis após os testes reais no totem. */
 export const defaultTreatment: TreatmentParams = {
   targetLuma: 0.55,
   exposureStrength: 0.15,
-  whiteBalanceStrength: 0.25,
+  whiteBalanceStrength: 0.3,
   shadowLift: 0.03,
-  highlightRolloff: 0.03,
-  contrast: 1.03,
-  saturation: 1.01,
-  sharpenAmount: 0.05,
+  highlightRolloff: 0.06,
+  contrast: 1.01,
+  saturation: 0.98,
+  sharpenAmount: 0.04,
+  /** leve deslocamento de temperatura (negativo = menos quente) */
+  temperature: -0.02,
 };
 
 /** Sem suavização de pele e sem redução de ruído: textura é prioridade. */
