@@ -70,7 +70,9 @@ export function ProcessingScreen({ capture, onDone, onBackToCamera }: Props) {
 
       {failed ? (
         <div className="flex w-full max-w-[52rem] flex-col gap-8">
-          <TouchButton onClick={retry}>Tentar novamente</TouchButton>
+          {failed !== "multiple-faces" && (
+            <TouchButton onClick={retry}>Tentar novamente</TouchButton>
+          )}
           <TouchButton variant="ghost" onClick={onBackToCamera}>
             Voltar para a câmera
           </TouchButton>
