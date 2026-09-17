@@ -1,24 +1,67 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useCallback, useState } from "react";
+import { KioskFrame } from "@/components/kiosk/KioskFrame";
+import { KioskViewport } from "@/components/kiosk/KioskViewport";
+import { AttractScreen } from "@/components/kiosk/screens/AttractScreen";
+import { InstructionsScreen } from "@/components/kiosk/screens/InstructionsScreen";
+import { CameraScreen } from "@/components/kiosk/screens/CameraScreen";
+import { ProcessingScreen } from "@/components/kiosk/screens/ProcessingScreen";
+import { ReviewScreen } from "@/components/kiosk/screens/ReviewScreen";
+import { DoneScreen } from "@/components/kiosk/screens/DoneScreen";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+const title = "Brasil 2027 · Sua foto para o passaporte | EMBRATUR";
+const description =
+  "Experiência touchscreen da EMBRATUR na FIT: tire sua foto estilo passaporte e prepare-se para viver o Brasil na Copa do Mundo Feminina de 2027.";
+
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title },
+      { name: "description", content: description },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+    ],
+  }),
+  component: Kiosk,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+type Step = "attract" | "instructions" | "camera" | "processing" | "review" | "done";
+
+function Kiosk() {
+  const [step, setStep] = useState<Step>("attract");
+  const [photo, setPhoto] = useState<string | null>(null);
+
+  const handleCaptured = useCallback((captured: string | null) => {
+    setPhoto(captured);
+    setStep("processing");
+  }, []);
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <KioskViewport>
+      <KioskFrame>
+        {step === "attract" && <AttractScreen onStart={() => setStep("instructions")} />}
+        {step === "instructions" && <InstructionsScreen onDone={() => setStep("camera")} />}
+        {step === "camera" && <CameraScreen onCaptured={handleCaptured} />}
+        {step === "processing" && <ProcessingScreen onDone={() => setStep("review")} />}
+        {step === "review" && (
+          <ReviewScreen
+            photo={photo}
+            onConfirm={() => setStep("done")}
+            onRetake={() => {
+              setPhoto(null);
+              setStep("camera");
+            }}
+          />
+        )}
+        {step === "done" && (
+          <DoneScreen
+            onReset={() => {
+              setPhoto(null);
+              setStep("attract");
+            }}
+          />
+        )}
+      </KioskFrame>
+    </KioskViewport>
   );
 }
