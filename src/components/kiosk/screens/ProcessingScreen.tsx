@@ -64,7 +64,7 @@ export function ProcessingScreen({ capture, onDone, onBackToCamera }: Props) {
         </div>
 
         <h1 className="font-display text-center text-[5.5rem] font-black uppercase leading-none">
-          {failed ? "Não foi possível preparar sua foto." : "Preparando sua foto..."}
+          {failed ? messages[failed] : "Preparando sua foto..."}
         </h1>
       </div>
 
