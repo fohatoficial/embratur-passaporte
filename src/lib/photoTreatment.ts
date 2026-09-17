@@ -19,8 +19,6 @@ export type TreatmentParams = {
   saturation: number;
   /** nitidez final (0-1) */
   sharpenAmount: number;
-  /** temperatura relativa (negativo = menos quente) */
-  temperature: number;
 };
 
 /** Valores conservadores, ajustáveis após os testes reais no totem. */
@@ -33,7 +31,6 @@ export const defaultTreatment: TreatmentParams = {
   contrast: 1.03,
   saturation: 1.01,
   sharpenAmount: 0.05,
-  temperature: 0,
 };
 
 /** Sem suavização de pele e sem redução de ruído: textura é prioridade. */
@@ -69,10 +66,9 @@ export function normalizeLightAndColor(data: ImageData, p = defaultTreatment) {
   const ab = sb / count;
   const gray = (ar + ag + ab) / 3;
 
-  const temp = p.temperature ?? 0;
-  const wbR = (1 + (gray / Math.max(ar, 1) - 1) * p.whiteBalanceStrength) * (1 + temp);
+  const wbR = 1 + (gray / Math.max(ar, 1) - 1) * p.whiteBalanceStrength;
   const wbG = 1 + (gray / Math.max(ag, 1) - 1) * p.whiteBalanceStrength;
-  const wbB = (1 + (gray / Math.max(ab, 1) - 1) * p.whiteBalanceStrength) * (1 - temp);
+  const wbB = 1 + (gray / Math.max(ab, 1) - 1) * p.whiteBalanceStrength;
 
   const luma = gray / 255;
   const rawGain = p.targetLuma / Math.max(luma, 0.05);
