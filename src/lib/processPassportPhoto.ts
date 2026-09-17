@@ -1,5 +1,5 @@
 import { detectFace, PhotoError, type FaceBox } from "./faceDetection";
-import { refineCutout } from "./maskRefine";
+import { MASK_SETTINGS, refineCutout } from "./maskRefine";
 import {
   defaultTreatment,
   normalizeLightAndColor,
@@ -160,7 +160,7 @@ export async function processPassportPhoto(
   // 2. segmentação da pessoa
   const cutout = await removeBackgroundOf(source);
 
-  // 3. limpeza da máscara
+  // 3. refinamento do canal alpha
   const framing = calculateDocumentFraming(source.width, source.height, face);
   const cutoutScale = cutout.width / source.width;
   const finalScale = framing.scale / cutoutScale;
@@ -168,6 +168,7 @@ export async function processPassportPhoto(
     cutout,
     { x: face.centerX * cutoutScale, y: face.centerY * cutoutScale },
     face.h * cutoutScale,
+    Math.max(0.5, MASK_SETTINGS.featherPx / Math.max(finalScale, 0.01)),
   );
 
   // 4. tratamento leve somente na camada da pessoa
