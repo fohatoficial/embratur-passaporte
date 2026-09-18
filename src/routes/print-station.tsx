@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Printer } from "lucide-react";
 import { PrintArea } from "@/components/kiosk/PrintArea";
+import { buildTestStrip } from "@/lib/buildTestStrip";
 import { supabase } from "@/integrations/supabase/client";
 import {
   claimJob,
@@ -67,6 +69,8 @@ function PrintStation() {
   const [strip, setStrip] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [stationId, setStationId] = useState(STATION_ID);
+  const [testing, setTesting] = useState(false);
+  const [testMessage, setTestMessage] = useState<string | null>(null);
 
   const busyRef = useRef(false);
   const readyResolve = useRef<(() => void) | null>(null);
