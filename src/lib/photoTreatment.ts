@@ -73,13 +73,20 @@ export function normalizeLightAndColor(data: ImageData, p = defaultTreatment) {
   const ab = sb / count;
   const gray = (ar + ag + ab) / 3;
 
-  const wbR = 1 + (gray / Math.max(ar, 1) - 1) * p.whiteBalanceStrength;
-  const wbG = 1 + (gray / Math.max(ag, 1) - 1) * p.whiteBalanceStrength;
-  const wbB = 1 + (gray / Math.max(ab, 1) - 1) * p.whiteBalanceStrength;
+  // temperatura só quando há dominante evidente (> WHITE_BALANCE_THRESHOLD)
+  const cast =
+    Math.max(Math.abs(ar - gray), Math.abs(ag - gray), Math.abs(ab - gray)) /
+    Math.max(gray, 1);
+  const wbStrength = cast > WHITE_BALANCE_THRESHOLD ? p.whiteBalanceStrength : 0;
+  const wbR = 1 + (gray / Math.max(ar, 1) - 1) * wbStrength;
+  const wbG = 1 + (gray / Math.max(ag, 1) - 1) * wbStrength;
+  const wbB = 1 + (gray / Math.max(ab, 1) - 1) * wbStrength;
 
+  // exposição limitada a ±EXPOSURE_LIMIT (±6%)
   const luma = gray / 255;
   const rawGain = p.targetLuma / Math.max(luma, 0.05);
-  const gain = 1 + (Math.min(Math.max(rawGain, 0.85), 1.25) - 1) * p.exposureStrength;
+  const scaled = 1 + (rawGain - 1) * p.exposureStrength;
+  const gain = Math.min(Math.max(scaled, 1 - EXPOSURE_LIMIT), 1 + EXPOSURE_LIMIT);
 
   for (let i = 0; i < n; i += 4) {
     if ((px[i + 3] ?? 0) <= ALPHA_MIN) continue;
