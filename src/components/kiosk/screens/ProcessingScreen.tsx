@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isPhotoError, processPassportPhoto } from "@/lib/processPassportPhoto";
 import { BrasilLogo } from "../BrasilLogo";
-import { ThematicLoader } from "../ThematicLoader";
+import { ImmersiveBrazilLoader } from "../ImmersiveBrazilLoader";
 import { TouchButton } from "../TouchButton";
 
 type Props = {
@@ -56,7 +56,7 @@ export function ProcessingScreen({ capture, onDone, onBackToCamera }: Props) {
           </h1>
         ) : (
           <>
-            <ThematicLoader size={260} label="Preparando tu foto…" />
+            <ImmersiveBrazilLoader size={280} label="Preparando tu foto…" />
             <p className="text-[1.75rem] font-medium text-muted-foreground">
               Esto tardará solo unos segundos.
             </p>
