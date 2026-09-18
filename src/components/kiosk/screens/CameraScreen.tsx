@@ -101,10 +101,13 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => vo
       setTimeout(() => {
         setCount(null);
         setFlash(true);
-        const shot = captureRef.current();
+        // a captura começa de imediato; o flash apenas cobre a transição
+        const shotPromise = captureRef.current();
         timers.push(
           setTimeout(() => {
-            if (shot) onCaptured(shot);
+            void shotPromise.then((shot) => {
+              if (shot) onCaptured(shot);
+            });
           }, 450),
         );
       }, 1800 + 5000),

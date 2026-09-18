@@ -24,20 +24,27 @@ export type TreatmentParams = {
 /** Valores conservadores, ajustáveis após os testes reais no totem. */
 export const defaultTreatment: TreatmentParams = {
   targetLuma: 0.55,
-  exposureStrength: 0.15,
+  exposureStrength: 0.6,
   whiteBalanceStrength: 0.25,
   shadowLift: 0.03,
-  highlightRolloff: 0.03,
-  contrast: 1.03,
-  saturation: 1.01,
-  sharpenAmount: 0.05,
+  highlightRolloff: 0.035,
+  contrast: 1.04,
+  saturation: 1.02,
+  sharpenAmount: 0.1,
 };
+
+/** Limite absoluto da correção de exposição: ±6%. */
+export const EXPOSURE_LIMIT = 0.06;
+/** Dominante de cor mínima (fração) para acionar a correção de temperatura. */
+export const WHITE_BALANCE_THRESHOLD = 0.02;
 
 /** Sem suavização de pele e sem redução de ruído: textura é prioridade. */
 export const SKIN_SMOOTHING = 0;
 export const NOISE_REDUCTION = 0;
 
 const ALPHA_MIN = 8;
+/** Pixels de borda (alpha parcial) ficam fora da nitidez — evita halo. */
+const ALPHA_SOLID = 250;
 const clamp255 = (v: number) => (v < 0 ? 0 : v > 255 ? 255 : v);
 
 /**
@@ -66,13 +73,20 @@ export function normalizeLightAndColor(data: ImageData, p = defaultTreatment) {
   const ab = sb / count;
   const gray = (ar + ag + ab) / 3;
 
-  const wbR = 1 + (gray / Math.max(ar, 1) - 1) * p.whiteBalanceStrength;
-  const wbG = 1 + (gray / Math.max(ag, 1) - 1) * p.whiteBalanceStrength;
-  const wbB = 1 + (gray / Math.max(ab, 1) - 1) * p.whiteBalanceStrength;
+  // temperatura só quando há dominante evidente (> WHITE_BALANCE_THRESHOLD)
+  const cast =
+    Math.max(Math.abs(ar - gray), Math.abs(ag - gray), Math.abs(ab - gray)) /
+    Math.max(gray, 1);
+  const wbStrength = cast > WHITE_BALANCE_THRESHOLD ? p.whiteBalanceStrength : 0;
+  const wbR = 1 + (gray / Math.max(ar, 1) - 1) * wbStrength;
+  const wbG = 1 + (gray / Math.max(ag, 1) - 1) * wbStrength;
+  const wbB = 1 + (gray / Math.max(ab, 1) - 1) * wbStrength;
 
+  // exposição limitada a ±EXPOSURE_LIMIT (±6%)
   const luma = gray / 255;
   const rawGain = p.targetLuma / Math.max(luma, 0.05);
-  const gain = 1 + (Math.min(Math.max(rawGain, 0.85), 1.25) - 1) * p.exposureStrength;
+  const scaled = 1 + (rawGain - 1) * p.exposureStrength;
+  const gain = Math.min(Math.max(scaled, 1 - EXPOSURE_LIMIT), 1 + EXPOSURE_LIMIT);
 
   for (let i = 0; i < n; i += 4) {
     if ((px[i + 3] ?? 0) <= ALPHA_MIN) continue;
@@ -121,9 +135,18 @@ export function sharpen(
       const alpha = src.data[i + 3] ?? 0;
       out.data[i + 3] = alpha;
       const edge = x === 0 || y === 0 || x === w - 1 || y === h - 1;
+      // a vizinhança precisa ser totalmente opaca: evita halo na transição
+      // entre pessoa e transparência (cabelo, ombros)
+      const interior =
+        !edge &&
+        alpha >= ALPHA_SOLID &&
+        (src.data[i - w * 4 + 3] ?? 0) >= ALPHA_SOLID &&
+        (src.data[i + w * 4 + 3] ?? 0) >= ALPHA_SOLID &&
+        (src.data[i - 4 + 3] ?? 0) >= ALPHA_SOLID &&
+        (src.data[i + 4 + 3] ?? 0) >= ALPHA_SOLID;
       for (let c = 0; c < 3; c += 1) {
         const center = src.data[i + c] ?? 0;
-        if (edge || alpha <= ALPHA_MIN) {
+        if (!interior || alpha <= ALPHA_MIN) {
           out.data[i + c] = center;
           continue;
         }

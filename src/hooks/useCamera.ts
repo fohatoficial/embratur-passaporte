@@ -3,9 +3,37 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export type CameraStatus = "idle" | "starting" | "live" | "error";
 
 const CONSTRAINTS: MediaStreamConstraints = {
-  video: { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1080 } },
+  video: {
+    facingMode: "user",
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
+    frameRate: { ideal: 30 },
+  },
   audio: false,
 };
+
+/**
+ * Pede foco, exposição e balanço de branco contínuos quando a câmera oferecer
+ * esses controles. Falhas são ignoradas silenciosamente.
+ */
+async function applyContinuousControls(stream: MediaStream) {
+  const track = stream.getVideoTracks()[0];
+  if (!track || typeof track.getCapabilities !== "function") return;
+  try {
+    const caps = track.getCapabilities() as Record<string, unknown>;
+    const advanced: Record<string, string> = {};
+    for (const key of ["focusMode", "exposureMode", "whiteBalanceMode"] as const) {
+      const modes = caps[key];
+      if (Array.isArray(modes) && modes.includes("continuous")) advanced[key] = "continuous";
+    }
+    if (Object.keys(advanced).length === 0) return;
+    await track.applyConstraints({
+      advanced: [advanced],
+    } as MediaTrackConstraints);
+  } catch {
+    // câmera sem suporte: segue com os padrões do navegador
+  }
+}
 
 /** stream compartilhado: aquecido antes da prévia e reutilizado por useCamera */
 let shared: MediaStream | null = null;
@@ -21,7 +49,8 @@ export function prewarmCamera(): Promise<MediaStream> {
   if (!pending) {
     pending = navigator.mediaDevices
       .getUserMedia(CONSTRAINTS)
-      .then((stream) => {
+      .then(async (stream) => {
+        await applyContinuousControls(stream);
         shared = stream;
         pending = null;
         return stream;
@@ -116,24 +145,59 @@ export function useCamera(active: boolean) {
     setAttempt((a) => a + 1);
   }, [stop]);
 
-  /** Captura o frame atual em resolução nativa, já espelhado como no preview. */
-  const capture = useCallback((): string | null => {
+  /**
+   * Captura em resolução máxima: prefere ImageCapture.takePhoto() quando a
+   * câmera oferecer suporte E devolver uma imagem maior que o quadro do vídeo;
+   * caso contrário usa o canvas em videoWidth × videoHeight (nunca o tamanho
+   * visual do CSS). Sem ampliação digital antes da captura.
+   */
+  const capture = useCallback(async (): Promise<string | null> => {
     const video = videoRef.current;
     if (!video || status !== "live" || !video.videoWidth || !video.videoHeight) return null;
 
-    const w = video.videoWidth;
-    const h = video.videoHeight;
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
 
-    ctx.translate(w, 0);
-    ctx.scale(-1, 1); // espelhado, igual ao preview visto pelo visitante
-    ctx.drawImage(video, 0, 0, w, h);
+    const draw = (source: CanvasImageSource, w: number, h: number) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.translate(w, 0);
+      ctx.scale(-1, 1); // espelhado, igual ao preview visto pelo visitante
+      ctx.drawImage(source, 0, 0, w, h);
+      const data = canvas.toDataURL("image/jpeg", 0.98);
+      canvas.width = 0;
+      canvas.height = 0;
+      return data;
+    };
 
-    return canvas.toDataURL("image/jpeg", 0.98);
+    const track = streamRef.current?.getVideoTracks()[0];
+    const ImageCaptureCtor = (
+      globalThis as unknown as { ImageCapture?: new (t: MediaStreamTrack) => unknown }
+    ).ImageCapture;
+
+    if (track && ImageCaptureCtor) {
+      try {
+        const ic = new ImageCaptureCtor(track) as { takePhoto: () => Promise<Blob> };
+        const blob = await ic.takePhoto();
+        const bitmap = await createImageBitmap(blob);
+        if (bitmap.width > vw && bitmap.height > vh) {
+          const data = draw(bitmap, bitmap.width, bitmap.height);
+          bitmap.close();
+          if (data) return data;
+        } else {
+          bitmap.close();
+        }
+      } catch {
+        // câmera sem suporte a foto nativa: segue com o quadro do vídeo
+      }
+    }
+
+    return draw(video, vw, vh);
   }, [status]);
 
   return { videoRef, status, capture, retry, stop };

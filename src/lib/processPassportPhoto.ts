@@ -150,7 +150,7 @@ export function calculateDocumentFraming(
   return { scale, dx, dy };
 }
 
-/** Tratamento leve aplicado somente à camada da pessoa (com transparência). */
+/** Correção de luz e cor na camada da pessoa, em resolução plena. */
 function treatPersonLayer(
   person: HTMLCanvasElement,
   params: TreatmentParams,
@@ -160,14 +160,63 @@ function treatPersonLayer(
   const imageData = ctx.getImageData(0, 0, person.width, person.height);
   normalizeLightAndColor(imageData, params);
   ctx.putImageData(imageData, 0, 0);
-  return sharpen(person, params);
+  return person;
 }
 
-/** Canvas branco puro (sem alpha) + pessoa desenhada por cima. */
-function compositeOnWhiteBackground(
+/** Libera a memória de um canvas intermediário. */
+function dispose(canvas: HTMLCanvasElement) {
+  canvas.width = 0;
+  canvas.height = 0;
+}
+
+/**
+ * Redução progressiva (aproximadamente pela metade a cada etapa) preservando
+ * o canal alpha, e posicionamento no canvas quadrado final transparente.
+ * Nunca amplia uma captura de baixa resolução além do necessário.
+ */
+function scalePersonToSquare(
   person: HTMLCanvasElement,
   framing: Framing,
 ): HTMLCanvasElement {
+  let current = person;
+  let remaining = framing.scale;
+
+  // etapas intermediárias enquanto a redução total for maior que 50%
+  while (remaining < 0.5 && current.width > 2 && current.height > 2) {
+    const half = document.createElement("canvas");
+    half.width = Math.max(1, Math.round(current.width / 2));
+    half.height = Math.max(1, Math.round(current.height / 2));
+    const hctx = half.getContext("2d");
+    if (!hctx) break;
+    hctx.imageSmoothingEnabled = true;
+    hctx.imageSmoothingQuality = "high";
+    hctx.drawImage(current, 0, 0, half.width, half.height);
+    if (current !== person) dispose(current);
+    current = half;
+    remaining *= 2;
+  }
+
+  const target = document.createElement("canvas");
+  target.width = PHOTO_W;
+  target.height = PHOTO_H;
+  const ctx = target.getContext("2d");
+  if (!ctx) throw new Error("Canvas indisponível.");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  // última etapa direto para o tamanho final
+  ctx.drawImage(
+    current,
+    framing.dx,
+    framing.dy,
+    person.width * framing.scale,
+    person.height * framing.scale,
+  );
+  if (current !== person) dispose(current);
+  return target;
+}
+
+/** Canvas branco puro (sem alpha) + pessoa já na escala final por cima. */
+function compositeOnWhiteBackground(person: HTMLCanvasElement): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
   canvas.width = PHOTO_W;
   canvas.height = PHOTO_H;
@@ -175,15 +224,7 @@ function compositeOnWhiteBackground(
   if (!ctx) throw new Error("Canvas indisponível.");
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, PHOTO_W, PHOTO_H);
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(
-    person,
-    framing.dx,
-    framing.dy,
-    person.width * framing.scale,
-    person.height * framing.scale,
-  );
+  ctx.drawImage(person, 0, 0);
   return canvas;
 }
 
@@ -191,8 +232,8 @@ const exportFinalJpeg = (canvas: HTMLCanvasElement) => canvas.toDataURL("image/j
 
 /**
  * Sequência obrigatória: captura → rosto → segmentação → refinamento do alpha
- * → tratamento leve apenas da pessoa → enquadramento → canvas branco puro →
- * desenho da pessoa → JPEG final.
+ * → luz e cor na pessoa → enquadramento com redução progressiva → nitidez na
+ * escala final → canvas branco puro → JPEG final.
  */
 export async function processPassportPhoto(
   capture: string,
@@ -219,12 +260,19 @@ export async function processPassportPhoto(
         face.h * cutoutScale,
         Math.max(0.5, MASK_SETTINGS.featherPx / Math.max(finalScale, 0.01)),
       );
+  dispose(source);
 
-  // 4. tratamento leve somente na camada da pessoa
+  // 4. luz e cor somente na camada da pessoa (resolução plena)
   const person = treatPersonLayer(refined, params);
 
-  // 5. composição sobre branco puro e exportação única
-  const composed = compositeOnWhiteBackground(person, { ...framing, scale: finalScale });
+  // 5. enquadramento com redução progressiva e nitidez só na escala final
+  const scaled = scalePersonToSquare(person, { ...framing, scale: finalScale });
+  if (person !== scaled) dispose(person);
+  const sharpened = sharpen(scaled, params);
+
+  // 6. composição sobre branco puro e exportação única
+  const composed = compositeOnWhiteBackground(sharpened);
+  dispose(sharpened);
   return exportFinalJpeg(composed);
 }
 
