@@ -71,6 +71,7 @@ function Kiosk() {
     setCapture(null);
     setPhoto(null);
     setStrip(null);
+    resetRemoteCutout();
     releaseCamera();
   }, []);
 
