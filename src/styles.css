@@ -249,6 +249,110 @@
   animation: kiosk-stamp 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* ---------- Sequência animada do passaporte ---------- */
+@keyframes kiosk-journey-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes kiosk-journey-roll {
+  0% {
+    transform: translateX(-70px) rotate(-90deg);
+  }
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+}
+
+@keyframes kiosk-journey-kick {
+  0%,
+  40% {
+    transform: rotate(-24deg);
+  }
+  70%,
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes kiosk-journey-kicked {
+  0%,
+  45% {
+    transform: translate(-26px, 14px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes kiosk-journey-draw {
+  from {
+    stroke-dashoffset: 420;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes kiosk-journey-arc {
+  0% {
+    opacity: 0;
+    transform: translate(-150px, -90px);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+}
+
+@utility animate-journey-in {
+  animation: kiosk-journey-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility animate-journey-roll {
+  animation: kiosk-journey-roll 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: center;
+}
+
+@utility animate-journey-kick {
+  animation: kiosk-journey-kick 1.2s ease-out both;
+  transform-origin: 96px 134px;
+}
+
+@utility animate-journey-kicked {
+  animation: kiosk-journey-kicked 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility animate-journey-draw {
+  animation: kiosk-journey-draw 1.1s ease-out both;
+}
+
+@utility animate-journey-arc {
+  animation: kiosk-journey-arc 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility animate-journey-stamp {
+  animation: kiosk-stamp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-journey-in,
+  .animate-fade-up,
+  .animate-stamp {
+    animation-duration: 0.01ms;
+  }
+}
+
 /* ---------- Impressão KODAK 6900 · tira 2x6 pol ---------- */
 .kiosk-print-area {
   display: none;
