@@ -6,8 +6,7 @@
       "name": "tanstack_start_ts",
       "dependencies": {
         "@hookform/resolvers": "^5.2.2",
-        "@iconify-json/game-icons": "^1.2.4",
-        "@iconify-json/mdi": "^1.2.3",
+        "@iconify-json/mingcute": "^1.2.8",
         "@iconify/react": "^6.0.2",
         "@imgly/background-removal": "^1.7.0",
         "@mediapipe/tasks-vision": "^1.0.1",
@@ -236,9 +235,7 @@
 
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
 
-    "@iconify-json/game-icons": ["@iconify-json/game-icons@1.2.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@iconify-json/game-icons/-/game-icons-1.2.4.tgz", { "dependencies": { "@iconify/types": "*" } }, "sha512-/HDDZxowXgDJcOEwPspUCq5RuDdl25OyZKdtxqqiPJQNTrWIym7r4StLzIVs77DyNzOWWhH5wDqwYR3WHeDfkg=="],
-
-    "@iconify-json/mdi": ["@iconify-json/mdi@1.2.3", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@iconify-json/mdi/-/mdi-1.2.3.tgz", { "dependencies": { "@iconify/types": "*" } }, "sha512-O3cLwbDOK7NNDf2ihaQOH5F9JglnulNDFV7WprU2dSoZu3h3cWH//h74uQAB87brHmvFVxIOkuBX2sZSzYhScg=="],
+    "@iconify-json/mingcute": ["@iconify-json/mingcute@1.2.8", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@iconify-json/mingcute/-/mingcute-1.2.8.tgz", { "dependencies": { "@iconify/types": "*" } }, "sha512-J8VXpRwTpx5yzOzyhx3T4IXnfXIKTWFl3rZ9okcW4c+NMMuwkLvdmM4rkjB83tnYIhg5+kkeMpmw8tvSnxd4rQ=="],
 
     "@iconify/react": ["@iconify/react@6.0.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@iconify/react/-/react-6.0.2.tgz", { "dependencies": { "@iconify/types": "^2.0.0" }, "peerDependencies": { "react": ">=16" } }, "sha512-SMmC2sactfpJD427WJEDN6PMyznTFMhByK9yLW0gOTtnjzzbsi/Ke/XqsumsavFPwNiXs8jSiYeZTmLCLwO+Fg=="],
 
