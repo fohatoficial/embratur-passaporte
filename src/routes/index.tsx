@@ -39,6 +39,7 @@ function Kiosk() {
   const [step, setStep] = useState<Step>("attract");
   const [capture, setCapture] = useState<string | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
+  const [strip, setStrip] = useState<string | null>(null);
 
   const handleCaptured = useCallback((captured: string) => {
     setCapture(captured);
