@@ -145,24 +145,59 @@ export function useCamera(active: boolean) {
     setAttempt((a) => a + 1);
   }, [stop]);
 
-  /** Captura o frame atual em resolução nativa, já espelhado como no preview. */
-  const capture = useCallback((): string | null => {
+  /**
+   * Captura em resolução máxima: prefere ImageCapture.takePhoto() quando a
+   * câmera oferecer suporte E devolver uma imagem maior que o quadro do vídeo;
+   * caso contrário usa o canvas em videoWidth × videoHeight (nunca o tamanho
+   * visual do CSS). Sem ampliação digital antes da captura.
+   */
+  const capture = useCallback(async (): Promise<string | null> => {
     const video = videoRef.current;
     if (!video || status !== "live" || !video.videoWidth || !video.videoHeight) return null;
 
-    const w = video.videoWidth;
-    const h = video.videoHeight;
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
 
-    ctx.translate(w, 0);
-    ctx.scale(-1, 1); // espelhado, igual ao preview visto pelo visitante
-    ctx.drawImage(video, 0, 0, w, h);
+    const draw = (source: CanvasImageSource, w: number, h: number) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.translate(w, 0);
+      ctx.scale(-1, 1); // espelhado, igual ao preview visto pelo visitante
+      ctx.drawImage(source, 0, 0, w, h);
+      const data = canvas.toDataURL("image/jpeg", 0.98);
+      canvas.width = 0;
+      canvas.height = 0;
+      return data;
+    };
 
-    return canvas.toDataURL("image/jpeg", 0.98);
+    const track = streamRef.current?.getVideoTracks()[0];
+    const ImageCaptureCtor = (
+      globalThis as unknown as { ImageCapture?: new (t: MediaStreamTrack) => unknown }
+    ).ImageCapture;
+
+    if (track && ImageCaptureCtor) {
+      try {
+        const ic = new ImageCaptureCtor(track) as { takePhoto: () => Promise<Blob> };
+        const blob = await ic.takePhoto();
+        const bitmap = await createImageBitmap(blob);
+        if (bitmap.width > vw && bitmap.height > vh) {
+          const data = draw(bitmap, bitmap.width, bitmap.height);
+          bitmap.close();
+          if (data) return data;
+        } else {
+          bitmap.close();
+        }
+      } catch {
+        // câmera sem suporte a foto nativa: segue com o quadro do vídeo
+      }
+    }
+
+    return draw(video, vw, vh);
   }, [status]);
 
   return { videoRef, status, capture, retry, stop };
