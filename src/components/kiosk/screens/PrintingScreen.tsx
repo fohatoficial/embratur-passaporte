@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BrasilLogo } from "../BrasilLogo";
+import { PassportJourney } from "../PassportJourney";
 import { TouchButton } from "../TouchButton";
 import { buildPrintStrip } from "@/lib/buildPrintStrip";
 import { enqueuePrintJob, fetchJob, type PrintJobStatus } from "@/lib/printQueue";
@@ -13,12 +14,13 @@ type Props = {
 
 type Phase = "sending" | "queued" | "processing" | "sent" | "error";
 
+/** estado real do sistema — nenhuma etapa simulada */
 const headline: Record<Phase, string> = {
-  sending: "Enviando sua foto para impressão",
-  queued: "Enviando sua foto para impressão",
-  processing: "Preparando sua impressão",
-  sent: "Sua foto foi enviada para a impressora",
-  error: "Não foi possível enviar sua foto",
+  sending: "Preparando tu foto…",
+  queued: "Enviando a impresión…",
+  processing: "Creando tus copias…",
+  sent: "Tu foto fue enviada a la impresora",
+  error: "No pudimos enviar tu foto",
 };
 
 /**
