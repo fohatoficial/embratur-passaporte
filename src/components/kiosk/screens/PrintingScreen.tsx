@@ -16,12 +16,15 @@ type Phase = "sending" | "queued" | "processing" | "sent" | "error";
 
 /** estado real do sistema — nenhuma etapa simulada */
 const headline: Record<Phase, string> = {
-  sending: "Preparando tu foto…",
-  queued: "Enviando a impresión…",
-  processing: "Creando tus copias…",
+  sending: "Preparando la impresión…",
+  queued: "Enviando a la estación…",
+  processing: "Impresión solicitada.",
   sent: "Tu foto fue enviada a la impresora",
   error: "No pudimos enviar tu foto",
 };
+
+/** tempo mínimo de exibição da narrativa */
+const MIN_MS = 5000;
 
 /**
  * O totem não imprime: monta o documento 2x6 e o envia para a fila da
