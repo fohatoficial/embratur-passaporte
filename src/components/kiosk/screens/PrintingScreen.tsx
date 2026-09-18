@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BrasilLogo } from "../BrasilLogo";
-import { PassportJourney } from "../PassportJourney";
+import { ThematicLoader } from "../ThematicLoader";
 import { TouchButton } from "../TouchButton";
 import { buildPrintStrip } from "@/lib/buildPrintStrip";
 import { enqueuePrintJob, fetchJob, type PrintJobStatus } from "@/lib/printQueue";
@@ -100,11 +100,14 @@ export function PrintingScreen({ photo, onFinished }: Props) {
       <BrasilLogo className="w-[18rem]" />
 
       <div className="animate-fade-up flex flex-col items-center gap-14 text-center">
-        {phase !== "error" && <PassportJourney size={460} />}
-        <h1 className="font-display text-[3rem] font-black uppercase leading-tight">
-          {headline[phase]}
-        </h1>
-        <p className="max-w-[44rem] text-[2rem] font-medium text-muted-foreground">
+        {phase === "error" || phase === "sent" ? (
+          <h1 className="font-display text-[3rem] font-black uppercase leading-tight">
+            {headline[phase]}
+          </h1>
+        ) : (
+          <ThematicLoader size={260} label={headline[phase]} />
+        )}
+        <p className="max-w-[44rem] text-[1.75rem] font-medium text-muted-foreground">
           {phase === "error"
             ? "Revisa la conexión y toca para intentar de nuevo."
             : phase === "sent"

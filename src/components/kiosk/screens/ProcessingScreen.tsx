@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isPhotoError, processPassportPhoto } from "@/lib/processPassportPhoto";
 import { BrasilLogo } from "../BrasilLogo";
-import { PassportJourney } from "../PassportJourney";
+import { ThematicLoader } from "../ThematicLoader";
 import { TouchButton } from "../TouchButton";
 
 type Props = {
@@ -50,20 +50,17 @@ export function ProcessingScreen({ capture, onDone, onBackToCamera }: Props) {
       <BrasilLogo className="w-[18rem]" />
 
       <div className="flex flex-col items-center gap-14 text-center">
-        {!failed && <PassportJourney size={460} />}
-
-        <h1
-          className={`font-display uppercase leading-none ${
-            failed ? "text-[3.5rem] font-black" : "text-[3rem] font-black"
-          }`}
-        >
-          {failed ? messages[failed] : "Preparando tu foto…"}
-        </h1>
-
-        {!failed && (
-          <p className="text-[2rem] font-medium text-muted-foreground">
-            Esto tardará solo unos segundos.
-          </p>
+        {failed ? (
+          <h1 className="font-display text-[3.5rem] font-black uppercase leading-none">
+            {messages[failed]}
+          </h1>
+        ) : (
+          <>
+            <ThematicLoader size={260} label="Preparando tu foto…" />
+            <p className="text-[1.75rem] font-medium text-muted-foreground">
+              Esto tardará solo unos segundos.
+            </p>
+          </>
         )}
       </div>
 
