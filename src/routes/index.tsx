@@ -59,23 +59,26 @@ function Kiosk() {
     setCapture(null);
     setPhoto(null);
     setStrip(null);
+    releaseCamera();
     setStep("attract");
   }, []);
 
-  // limpeza ao desmontar: nada de foto guardada
+  // limpeza ao desmontar: nada de foto guardada e câmera liberada
   useEffect(() => () => {
     setCapture(null);
     setPhoto(null);
     setStrip(null);
+    releaseCamera();
   }, []);
+
 
   return (
     <>
     <BootSplash />
     <KioskViewport>
       <KioskFrame>
-        {step === "attract" && <AttractScreen onStart={() => setStep("instructions")} />}
-        {step === "instructions" && <InstructionsScreen onDone={() => setStep("camera")} />}
+        {step === "attract" && <AttractScreen onStart={() => setStep("precapture")} />}
+        {step === "precapture" && <PreCaptureScreen onReady={() => setStep("camera")} />}
         {step === "camera" && <CameraScreen onCaptured={handleCaptured} />}
         {step === "processing" && capture && (
           <ProcessingScreen
