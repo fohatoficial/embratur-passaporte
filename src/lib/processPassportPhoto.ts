@@ -17,13 +17,13 @@ export const PHOTO_H = 1200; // 1:1 (corte físico 5x5 cm)
  * Constantes de enquadramento (retrato do peito para cima).
  * Única fonte de verdade — a prévia da câmera usa as mesmas proporções.
  */
-export const TARGET_FACE_HEIGHT_RATIO = 0.36; // caixa facial ocupa ~36% da altura final
-export const MAX_FACE_HEIGHT_RATIO = 0.38; // limite superior aceitável
-export const TARGET_EYE_Y_RATIO = 0.35; // linha dos olhos no canvas final
-export const TOP_HEAD_MARGIN_RATIO = 0.1; // respiro acima do cabelo
+export const TARGET_FACE_HEIGHT_RATIO = 0.41; // caixa facial ocupa ~41% da altura final
+export const MAX_FACE_HEIGHT_RATIO = 0.44; // limite superior aceitável
+export const TARGET_EYE_Y_RATIO = 0.34; // linha dos olhos no canvas final
+export const TOP_HEAD_MARGIN_RATIO = 0.085; // respiro pequeno acima do cabelo
 /** Faixa aceitável da caixa facial em relação à ALTURA DA CAPTURA original. */
 export const MIN_FACE_CAPTURE_RATIO = 0.22;
-export const MAX_FACE_CAPTURE_RATIO = 0.38;
+export const MAX_FACE_CAPTURE_RATIO = 0.45;
 const HAIR_ABOVE_FACE = 0.4; // cabelo estimado acima do bounding box facial
 
 function loadImage(src: string): Promise<HTMLImageElement> {
