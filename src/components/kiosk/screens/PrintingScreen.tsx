@@ -87,8 +87,7 @@ export function PrintingScreen({ photo, onFinished }: Props) {
   // encerra a jornada alguns segundos após a confirmação
   useEffect(() => {
     if (phase !== "sent") return;
-    stripRef.current = null;
-    const timer = setTimeout(() => doneRef.current(), 4000);
+    const timer = setTimeout(() => doneRef.current(stripRef.current), 4000);
     return () => clearTimeout(timer);
   }, [phase]);
 
