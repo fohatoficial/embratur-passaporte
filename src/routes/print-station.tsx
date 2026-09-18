@@ -75,11 +75,13 @@ function PrintStation() {
   const [stationId, setStationId] = useState(STATION_ID);
   const [testing, setTesting] = useState(false);
   const [testMessage, setTestMessage] = useState<string | null>(null);
+  const [showManual, setShowManual] = useState(false);
 
   const busyRef = useRef(false);
   const readyResolve = useRef<(() => void) | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const manualTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const attemptRef = useRef(0);
   const mountedRef = useRef(true);
 
