@@ -3,9 +3,37 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export type CameraStatus = "idle" | "starting" | "live" | "error";
 
 const CONSTRAINTS: MediaStreamConstraints = {
-  video: { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1080 } },
+  video: {
+    facingMode: "user",
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
+    frameRate: { ideal: 30 },
+  },
   audio: false,
 };
+
+/**
+ * Pede foco, exposição e balanço de branco contínuos quando a câmera oferecer
+ * esses controles. Falhas são ignoradas silenciosamente.
+ */
+async function applyContinuousControls(stream: MediaStream) {
+  const track = stream.getVideoTracks()[0];
+  if (!track || typeof track.getCapabilities !== "function") return;
+  try {
+    const caps = track.getCapabilities() as Record<string, unknown>;
+    const advanced: Record<string, string> = {};
+    for (const key of ["focusMode", "exposureMode", "whiteBalanceMode"] as const) {
+      const modes = caps[key];
+      if (Array.isArray(modes) && modes.includes("continuous")) advanced[key] = "continuous";
+    }
+    if (Object.keys(advanced).length === 0) return;
+    await track.applyConstraints({
+      advanced: [advanced],
+    } as MediaTrackConstraints);
+  } catch {
+    // câmera sem suporte: segue com os padrões do navegador
+  }
+}
 
 /** stream compartilhado: aquecido antes da prévia e reutilizado por useCamera */
 let shared: MediaStream | null = null;
