@@ -4,7 +4,8 @@ import { BootSplash } from "@/components/kiosk/BootSplash";
 import { KioskFrame } from "@/components/kiosk/KioskFrame";
 import { KioskViewport } from "@/components/kiosk/KioskViewport";
 import { AttractScreen } from "@/components/kiosk/screens/AttractScreen";
-import { InstructionsScreen } from "@/components/kiosk/screens/InstructionsScreen";
+import { PreCaptureScreen } from "@/components/kiosk/screens/PreCaptureScreen";
+import { releaseCamera } from "@/hooks/useCamera";
 import { CameraScreen } from "@/components/kiosk/screens/CameraScreen";
 import { ProcessingScreen } from "@/components/kiosk/screens/ProcessingScreen";
 import { ReviewScreen } from "@/components/kiosk/screens/ReviewScreen";
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/")({
 
 type Step =
   | "attract"
-  | "instructions"
+  | "precapture"
   | "camera"
   | "processing"
   | "review"
