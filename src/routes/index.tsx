@@ -53,6 +53,7 @@ function Kiosk() {
   const backToCamera = useCallback(() => {
     setCapture(null);
     setPhoto(null);
+    resetRemoteCutout();
     setStep("camera");
   }, []);
 
@@ -60,6 +61,7 @@ function Kiosk() {
     setCapture(null);
     setPhoto(null);
     setStrip(null);
+    resetRemoteCutout();
     releaseCamera();
     setStep("attract");
   }, []);
