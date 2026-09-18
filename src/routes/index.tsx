@@ -56,6 +56,7 @@ function Kiosk() {
   const reset = useCallback(() => {
     setCapture(null);
     setPhoto(null);
+    setStrip(null);
     setStep("attract");
   }, []);
 
@@ -63,6 +64,7 @@ function Kiosk() {
   useEffect(() => () => {
     setCapture(null);
     setPhoto(null);
+    setStrip(null);
   }, []);
 
   return (
