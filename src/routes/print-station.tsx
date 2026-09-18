@@ -161,6 +161,30 @@ function PrintStation() {
     }
   }, [refreshQueue]);
 
+  /** Impressão de teste local: não cria trabalho na fila do totem. */
+  const runTestPrint = useCallback(async () => {
+    if (busyRef.current || testing) return;
+    busyRef.current = true;
+    setTesting(true);
+    setTestMessage(null);
+    try {
+      setStrip(buildTestStrip());
+      await waitForReady();
+      const after = waitForAfterPrint();
+      window.print();
+      await after;
+      setTestMessage("Teste enviado para impressão");
+    } catch (err) {
+      setTestMessage(err instanceof Error ? err.message : "Falha ao imprimir o teste.");
+    } finally {
+      setStrip(null);
+      readyResolve.current = null;
+      setTesting(false);
+      busyRef.current = false;
+    }
+  }, [testing]);
+
+
   const teardownChannel = useCallback(() => {
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
