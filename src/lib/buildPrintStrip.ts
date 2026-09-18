@@ -1,7 +1,7 @@
 /**
  * Documento de impressão da KODAK 6900: tira vertical de 2x6 pol
- * (600x1800 px @ 300 dpi), fundo branco, com a foto quadrada 5x5 cm
- * posicionada perto da extremidade superior.
+ * (600x1800 px @ 300 dpi), fundo branco, com TRÊS cópias idênticas da
+ * foto quadrada 5x5 cm empilhadas verticalmente.
  *
  * Este módulo NÃO processa a fotografia: apenas monta o documento de
  * impressão a partir da imagem final já aprovada.
@@ -12,10 +12,10 @@ export const STRIP_H = 1800; // 6in @ 300dpi
 
 /** Área física de corte: 50x50 mm = 591x591 px @ 300dpi. */
 export const CUT_SIZE = 591;
-/** Sangria da própria foto ao redor da área de corte (~1,2 mm). */
-export const BLEED_PX = 14;
-/** Distância do topo da tira até o início da área de corte. */
-export const CUT_TOP = 24;
+/** Sangria discreta da própria foto ao redor da área de corte. */
+export const BLEED_PX = 3;
+/** Topo de cada uma das três áreas de corte (margens externas mínimas). */
+export const CUT_TOPS = [6, 603, 1200] as const;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -41,11 +41,12 @@ export async function buildPrintStrip(photo: string): Promise<string> {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
 
-  // foto quadrada ampliada pela sangria, mantendo o enquadramento central
+  // mesma imagem processada, três vezes, sem distorção
   const size = CUT_SIZE + BLEED_PX * 2;
   const x = (STRIP_W - CUT_SIZE) / 2 - BLEED_PX;
-  const y = CUT_TOP - BLEED_PX;
-  ctx.drawImage(img, x, y, size, size);
+  for (const top of CUT_TOPS) {
+    ctx.drawImage(img, x, top - BLEED_PX, size, size);
+  }
 
   return canvas.toDataURL("image/jpeg", 0.95);
 }

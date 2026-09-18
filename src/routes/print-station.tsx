@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Printer } from "lucide-react";
 import { PrintArea } from "@/components/kiosk/PrintArea";
+import { buildTestStrip } from "@/lib/buildTestStrip";
 import { supabase } from "@/integrations/supabase/client";
 import {
   claimJob,
@@ -67,6 +69,8 @@ function PrintStation() {
   const [strip, setStrip] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [stationId, setStationId] = useState(STATION_ID);
+  const [testing, setTesting] = useState(false);
+  const [testMessage, setTestMessage] = useState<string | null>(null);
 
   const busyRef = useRef(false);
   const readyResolve = useRef<(() => void) | null>(null);
@@ -156,6 +160,30 @@ function PrintStation() {
       await refreshQueue();
     }
   }, [refreshQueue]);
+
+  /** Impressão de teste local: não cria trabalho na fila do totem. */
+  const runTestPrint = useCallback(async () => {
+    if (busyRef.current || testing) return;
+    busyRef.current = true;
+    setTesting(true);
+    setTestMessage(null);
+    try {
+      setStrip(buildTestStrip());
+      await waitForReady();
+      const after = waitForAfterPrint();
+      window.print();
+      await after;
+      setTestMessage("Teste enviado para impressão");
+    } catch (err) {
+      setTestMessage(err instanceof Error ? err.message : "Falha ao imprimir o teste.");
+    } finally {
+      setStrip(null);
+      readyResolve.current = null;
+      setTesting(false);
+      busyRef.current = false;
+    }
+  }, [testing]);
+
 
   const teardownChannel = useCallback(() => {
     if (channelRef.current) {
@@ -275,6 +303,19 @@ function PrintStation() {
           >
             Recarregar fila
           </button>
+          <button
+            onClick={() => void runTestPrint()}
+            disabled={testing}
+            className="font-display flex items-center justify-center gap-4 rounded-full border-4 border-border bg-secondary px-10 py-6 text-2xl font-black uppercase text-secondary-foreground disabled:opacity-50"
+          >
+            <Printer className="h-9 w-9" strokeWidth={2.5} />
+            Imprimir teste
+          </button>
+          {testMessage && (
+            <p className="text-center text-xl font-semibold text-muted-foreground">
+              {testMessage}
+            </p>
+          )}
           {lastFailed && (
             <button
               onClick={() => {
