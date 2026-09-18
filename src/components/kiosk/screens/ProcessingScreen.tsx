@@ -56,7 +56,11 @@ export function ProcessingScreen({ capture, onDone, onBackToCamera }: Props) {
           </h1>
         ) : (
           <>
-            <ImmersiveBrazilLoader size={280} label="Preparando tu foto…" />
+            <ImmersiveBrazilLoader
+              variant="photoProcessing"
+              size={280}
+              label="Preparando tu foto…"
+            />
             <p className="text-[1.75rem] font-medium text-muted-foreground">
               Esto tardará solo unos segundos.
             </p>

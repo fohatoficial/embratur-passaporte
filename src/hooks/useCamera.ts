@@ -73,7 +73,6 @@ export function useCamera(active: boolean) {
         streamRef.current = stream;
         const video = videoRef.current;
         if (!video) {
-          stream.getTracks().forEach((t) => t.stop());
           streamRef.current = null;
           setStatus("error");
           return;
