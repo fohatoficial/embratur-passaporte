@@ -63,7 +63,7 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => vo
             } else {
               unknowns = 0;
               const next: Framing =
-                measure.ratio > MAX_FACE_CAPTURE_RATIO || measure.belowChin < 0.6
+                measure.ratio > MAX_FACE_CAPTURE_RATIO || measure.belowChin < 0.35
                   ? "near"
                   : measure.ratio < MIN_FACE_CAPTURE_RATIO
                     ? "far"
