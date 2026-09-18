@@ -88,9 +88,15 @@ function Kiosk() {
           />
         )}
         {step === "printing" && photo && (
-          <PrintingScreen photo={photo} onFinished={() => setStep("done")} />
+          <PrintingScreen
+            photo={photo}
+            onFinished={(printed) => {
+              setStrip(printed);
+              setStep("done");
+            }}
+          />
         )}
-        {step === "done" && <DoneScreen onReset={reset} />}
+        {step === "done" && <DoneScreen onReset={reset} strip={strip} />}
       </KioskFrame>
     </KioskViewport>
   );
