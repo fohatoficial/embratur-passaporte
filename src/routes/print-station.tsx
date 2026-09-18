@@ -275,6 +275,19 @@ function PrintStation() {
           >
             Recarregar fila
           </button>
+          <button
+            onClick={() => void runTestPrint()}
+            disabled={testing}
+            className="font-display flex items-center justify-center gap-4 rounded-full border-4 border-border bg-secondary px-10 py-6 text-2xl font-black uppercase text-secondary-foreground disabled:opacity-50"
+          >
+            <Printer className="h-9 w-9" strokeWidth={2.5} />
+            Imprimir teste
+          </button>
+          {testMessage && (
+            <p className="text-center text-xl font-semibold text-muted-foreground">
+              {testMessage}
+            </p>
+          )}
           {lastFailed && (
             <button
               onClick={() => {
