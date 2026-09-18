@@ -1,20 +1,92 @@
 import { useEffect, useRef, useState } from "react";
 import { useCamera } from "@/hooks/useCamera";
+import { measureFace } from "@/lib/faceDetection";
+import {
+  MAX_FACE_CAPTURE_RATIO,
+  MIN_FACE_CAPTURE_RATIO,
+} from "@/lib/processPassportPhoto";
 import { BrasilLogo } from "../BrasilLogo";
 import { FaceFrameGuide } from "../FaceFrameGuide";
 import { KioskSpinner } from "../KioskSpinner";
 import { TouchButton } from "../TouchButton";
 
+type Framing = "near" | "far" | "ok" | "unknown";
+
+const HINTS: Record<Framing, string> = {
+  near: "Aléjate un poco",
+  far: "Acércate un poco",
+  ok: "Perfecto, no te muevas",
+  unknown: "Centra tu rostro",
+};
+
+/** intervalo da medição leve durante a prévia */
+const MEASURE_MS = 600;
+/** medições sem rosto antes de liberar a contagem mesmo assim */
+const UNKNOWN_TOLERANCE = 6;
+
 export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => void }) {
   const { videoRef, status, capture, retry } = useCamera(true);
   const [count, setCount] = useState<number | null>(null);
   const [flash, setFlash] = useState(false);
+  const [framing, setFraming] = useState<Framing>("unknown");
+  const [armed, setArmed] = useState(false);
   const captureRef = useRef(capture);
   captureRef.current = capture;
 
-  // a contagem só começa quando o vídeo está realmente reproduzindo
+  // medição leve do enquadramento (não altera a captura nem a foto final)
   useEffect(() => {
     if (status !== "live") {
+      setFraming("unknown");
+      return;
+    }
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let unknowns = 0;
+    const frame = document.createElement("canvas");
+
+    const tick = async () => {
+      const video = videoRef.current;
+      if (!cancelled && video && video.videoWidth > 0) {
+        const scale = 320 / video.videoWidth;
+        frame.width = 320;
+        frame.height = Math.round(video.videoHeight * scale);
+        const ctx = frame.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, frame.width, frame.height);
+          const measure = await measureFace(frame);
+          if (!cancelled) {
+            if (!measure) {
+              unknowns += 1;
+              setFraming("unknown");
+              if (unknowns >= UNKNOWN_TOLERANCE) setArmed(true);
+            } else {
+              unknowns = 0;
+              const next: Framing =
+                measure.ratio > MAX_FACE_CAPTURE_RATIO || measure.belowChin < 0.6
+                  ? "near"
+                  : measure.ratio < MIN_FACE_CAPTURE_RATIO
+                    ? "far"
+                    : "ok";
+              setFraming(next);
+              if (next === "ok") setArmed(true);
+            }
+          }
+        }
+      }
+      if (!cancelled) timer = setTimeout(() => void tick(), MEASURE_MS);
+    };
+
+    void tick();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [status, videoRef]);
+
+  // a contagem só começa com vídeo reproduzindo e enquadramento adequado
+  useEffect(() => {
+    if (status !== "live" || !armed) {
       setCount(null);
       setFlash(false);
       return;
@@ -38,11 +110,10 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => vo
       }, 1800 + 5000),
     );
     return () => timers.forEach(clearTimeout);
-  }, [status, onCaptured]);
+  }, [status, armed, onCaptured]);
 
   const intense = count !== null && count <= 3;
-  /** sem detecção de rosto em tempo real: orientação fixa e discreta */
-  const guidance = count !== null && count <= 3 ? "Perfecto, no te muevas" : "Centra tu rostro";
+  const guidance = intense ? HINTS.ok : HINTS[framing];
 
   return (
     <>
