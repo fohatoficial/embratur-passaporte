@@ -192,19 +192,22 @@ export async function processPassportPhoto(
   // 1. rosto na captura original
   const face = await detectFace(source);
 
-  // 2. segmentação da pessoa
-  const cutout = await removeBackgroundOf(source);
+  // 2. segmentação da pessoa: PhotoRoom e, se falhar, o recorte local atual
+  const remote = await remoteCutoutOf(capture, source);
+  const cutout = remote ?? (await removeBackgroundOf(source));
 
-  // 3. refinamento do canal alpha
+  // 3. refinamento do canal alpha somente no fallback local
   const framing = calculateDocumentFraming(source.width, source.height, face);
   const cutoutScale = cutout.width / source.width;
   const finalScale = framing.scale / cutoutScale;
-  const refined = refineCutout(
-    cutout,
-    { x: face.centerX * cutoutScale, y: face.centerY * cutoutScale },
-    face.h * cutoutScale,
-    Math.max(0.5, MASK_SETTINGS.featherPx / Math.max(finalScale, 0.01)),
-  );
+  const refined = remote
+    ? cutout
+    : refineCutout(
+        cutout,
+        { x: face.centerX * cutoutScale, y: face.centerY * cutoutScale },
+        face.h * cutoutScale,
+        Math.max(0.5, MASK_SETTINGS.featherPx / Math.max(finalScale, 0.01)),
+      );
 
   // 4. tratamento leve somente na camada da pessoa
   const person = treatPersonLayer(refined, params);
