@@ -66,7 +66,7 @@ export function AttractScreen({ onStart }: { onStart: () => void }) {
 
           <ActionTile
             variant="ghost"
-            className="max-w-[34rem]"
+            className="w-[34rem] flex-none"
             onClick={() => setShowHow(false)}
             icon={<X className="h-16 w-16" strokeWidth={3} />}
             label="Cerrar"
