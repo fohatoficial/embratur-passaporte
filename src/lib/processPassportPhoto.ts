@@ -13,11 +13,17 @@ export { PhotoError } from "./faceDetection";
 export const PHOTO_W = 1200;
 export const PHOTO_H = 1200; // 1:1 (corte físico 5x5 cm)
 
-/** Constantes de enquadramento — ajustáveis após os testes reais. */
-export const TARGET_FACE_HEIGHT_RATIO = 0.55; // altura do rosto no canvas
-export const TARGET_EYE_Y_RATIO = 0.44; // altura dos olhos no canvas
-export const TOP_HEAD_MARGIN_RATIO = 0.08; // margem mínima acima do cabelo
-export const PERSON_SCALE_CORRECTION = 0.95; // pessoa ~5% menor
+/**
+ * Constantes de enquadramento (retrato do peito para cima).
+ * Única fonte de verdade — a prévia da câmera usa as mesmas proporções.
+ */
+export const TARGET_FACE_HEIGHT_RATIO = 0.36; // caixa facial ocupa ~36% da altura final
+export const MAX_FACE_HEIGHT_RATIO = 0.38; // limite superior aceitável
+export const TARGET_EYE_Y_RATIO = 0.35; // linha dos olhos no canvas final
+export const TOP_HEAD_MARGIN_RATIO = 0.1; // respiro acima do cabelo
+/** Faixa aceitável da caixa facial em relação à ALTURA DA CAPTURA original. */
+export const MIN_FACE_CAPTURE_RATIO = 0.22;
+export const MAX_FACE_CAPTURE_RATIO = 0.38;
 const HAIR_ABOVE_FACE = 0.4; // cabelo estimado acima do bounding box facial
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -108,30 +114,35 @@ async function remoteCutoutOf(
 export type Framing = { scale: number; dx: number; dy: number };
 
 /**
- * Escala e deslocamento da captura completa sobre o canvas 1:1, calculados
- * pelo rosto: olhos na altura alvo, margem acima do cabelo e tronco atingindo
- * a borda inferior (sem faixa branca nem corte horizontal).
+ * Escala e deslocamento da imagem transparente COMPLETA sobre o canvas 1:1.
+ *
+ * A escala vem exclusivamente da altura da caixa facial (rosto padronizado em
+ * ~36% da altura final) e nunca é ampliada para preencher a base: se a captura
+ * não tiver tronco suficiente, usa-se o maior enquadramento real disponível,
+ * limitado a MAX_FACE_HEIGHT_RATIO. Nada é recortado antes da composição —
+ * apenas o que ultrapassa as bordas do canvas é cortado no desenho.
  */
 export function calculateDocumentFraming(
-  sourceW: number,
+  _sourceW: number,
   sourceH: number,
   face: FaceBox,
 ): Framing {
   const faceScale = (PHOTO_H * TARGET_FACE_HEIGHT_RATIO) / face.h;
+  const maxScale = (PHOTO_H * MAX_FACE_HEIGHT_RATIO) / face.h;
 
-  // escala mínima para o conteúdo alcançar a borda inferior com os olhos na
-  // altura alvo: s * (sourceH - eyeY) >= PHOTO_H * (1 - TARGET_EYE_Y_RATIO)
+  // escala que faria o conteúdo alcançar a borda inferior com os olhos na
+  // altura alvo — só é considerada dentro do limite facial permitido
   const bottomScale =
     (PHOTO_H * (1 - TARGET_EYE_Y_RATIO)) / Math.max(sourceH - face.eyeY, 1);
-  const widthScale = PHOTO_W / Math.max(sourceW, 1);
 
-  const scale =
-    Math.max(faceScale * PERSON_SCALE_CORRECTION, bottomScale, widthScale * 0.98);
+  const scale = Math.min(Math.max(faceScale, Math.min(bottomScale, maxScale)), maxScale);
 
+  // centraliza horizontalmente pelo centro do rosto
   const dx = PHOTO_W / 2 - face.centerX * scale;
+  // posição vertical definida pela linha dos olhos
   let dy = PHOTO_H * TARGET_EYE_Y_RATIO - face.eyeY * scale;
 
-  // garante margem acima do cabelo (empurra para baixo se necessário)
+  // garante respiro acima do cabelo (empurra para baixo se necessário)
   const hairTop = (face.y - face.h * HAIR_ABOVE_FACE) * scale + dy;
   const minTop = PHOTO_H * TOP_HEAD_MARGIN_RATIO;
   if (hairTop < minTop) dy += minTop - hairTop;
