@@ -27,6 +27,11 @@ type Props = {
 export function ThematicLoader({ label, size = 240 }: Props) {
   const [index, setIndex] = useState(0);
   const [visible, setVisible] = useState(true);
+  const [reduced, setReduced] = useState(false);
+
+  useEffect(() => {
+    setReduced(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false);
+  }, []);
 
   useEffect(() => {
     const swap = setInterval(() => {
@@ -51,7 +56,7 @@ export function ThematicLoader({ label, size = 240 }: Props) {
             width: size,
             height: size,
             opacity: visible ? 1 : 0,
-            transform: visible ? "scale(1)" : "scale(0.94)",
+            transform: visible || reduced ? "scale(1)" : "scale(0.94)",
             transitionDuration: `${FADE_MS}ms`,
           }}
         />
