@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
   photo: string;
-  onFinished: () => void;
+  /** devolve o documento 2x6 já montado para eventual reimpressão */
+  onFinished: (strip: string | null) => void;
 };
 
 type Phase = "sending" | "queued" | "processing" | "sent" | "error";
@@ -86,8 +87,7 @@ export function PrintingScreen({ photo, onFinished }: Props) {
   // encerra a jornada alguns segundos após a confirmação
   useEffect(() => {
     if (phase !== "sent") return;
-    stripRef.current = null;
-    const timer = setTimeout(() => doneRef.current(), 4000);
+    const timer = setTimeout(() => doneRef.current(stripRef.current), 4000);
     return () => clearTimeout(timer);
   }, [phase]);
 

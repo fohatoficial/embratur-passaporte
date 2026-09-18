@@ -39,6 +39,7 @@ function Kiosk() {
   const [step, setStep] = useState<Step>("attract");
   const [capture, setCapture] = useState<string | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
+  const [strip, setStrip] = useState<string | null>(null);
 
   const handleCaptured = useCallback((captured: string) => {
     setCapture(captured);
@@ -55,6 +56,7 @@ function Kiosk() {
   const reset = useCallback(() => {
     setCapture(null);
     setPhoto(null);
+    setStrip(null);
     setStep("attract");
   }, []);
 
@@ -62,6 +64,7 @@ function Kiosk() {
   useEffect(() => () => {
     setCapture(null);
     setPhoto(null);
+    setStrip(null);
   }, []);
 
   return (
@@ -88,9 +91,15 @@ function Kiosk() {
           />
         )}
         {step === "printing" && photo && (
-          <PrintingScreen photo={photo} onFinished={() => setStep("done")} />
+          <PrintingScreen
+            photo={photo}
+            onFinished={(printed) => {
+              setStrip(printed);
+              setStep("done");
+            }}
+          />
         )}
-        {step === "done" && <DoneScreen onReset={reset} />}
+        {step === "done" && <DoneScreen onReset={reset} strip={strip} />}
       </KioskFrame>
     </KioskViewport>
   );
