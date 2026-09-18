@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
+import { BootSplash } from "@/components/kiosk/BootSplash";
 import { KioskFrame } from "@/components/kiosk/KioskFrame";
 import { KioskViewport } from "@/components/kiosk/KioskViewport";
 import { AttractScreen } from "@/components/kiosk/screens/AttractScreen";
