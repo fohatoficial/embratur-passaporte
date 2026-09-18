@@ -69,6 +69,8 @@ function Kiosk() {
   }, []);
 
   return (
+    <>
+    <BootSplash />
     <KioskViewport>
       <KioskFrame>
         {step === "attract" && <AttractScreen onStart={() => setStep("instructions")} />}
