@@ -44,7 +44,7 @@ export const removePhotoBackground = createServerFn({ method: "POST" })
     form.append("format", "png");
     form.append("channels", "rgba");
     form.append("crop", "false");
-    form.append("size", "medium");
+    form.append("size", "hd");
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
