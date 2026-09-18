@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Home, Printer, RotateCcw } from "lucide-react";
 import { BrasilLogo } from "../BrasilLogo";
+import { ActionTile } from "../ActionTile";
+import { KioskSpinner } from "../KioskSpinner";
 import { enqueuePrintJob } from "@/lib/printQueue";
 
 const AUTO_RESET_SECONDS = 60;
@@ -48,6 +50,13 @@ export function DoneScreen({ onReset, strip }: Props) {
     })();
   }, [strip, reprint]);
 
+  const reprintLabel =
+    reprint === "sending"
+      ? "Enviando otra copia…"
+      : reprint === "done"
+        ? "Reimpresión enviada"
+        : "Reimprimir";
+
   return (
     <>
       <BrasilLogo className="animate-fade-up w-[18rem]" />
@@ -60,38 +69,44 @@ export function DoneScreen({ onReset, strip }: Props) {
           >
             Brasil 2027
           </span>
-          <span className="font-display block text-[10rem] font-black uppercase leading-none">
-            Pronto!
+          <span className="font-display block text-[8rem] font-black uppercase leading-none">
+            ¡Listo!
           </span>
         </div>
 
-        <p className="max-w-[44rem] text-5xl font-semibold leading-tight">
-          Sua foto para o passaporte está pronta.
+        <p className="max-w-[44rem] text-[2.75rem] font-semibold leading-tight">
+          Tu foto para el pasaporte está lista.
         </p>
-        <p className="max-w-[44rem] text-4xl font-medium text-muted-foreground">
-          Prepare-se para viver o Brasil em 2027.
+        <p className="max-w-[44rem] text-[2.25rem] font-medium text-muted-foreground">
+          Retira tus tres copias en la estación de impresión.
         </p>
       </div>
 
-      <div className="flex flex-col items-center gap-6">
-        <div className="flex items-center gap-8">
-          <ActionButton
-            label={reprint === "done" ? "Reimpressão enviada" : "Reimprimir"}
+      <div className="flex w-full max-w-[52rem] flex-col items-center gap-6">
+        <div className="flex w-full items-stretch gap-8">
+          <ActionTile
+            variant="ghost"
+            label={reprintLabel}
             disabled={!strip || reprint !== "idle"}
             completed={reprint === "done"}
             onClick={handleReprint}
             icon={
-              <span className="relative block">
-                <Printer className="h-16 w-16" strokeWidth={2.5} />
-                <RotateCcw
-                  className="absolute -bottom-2 -right-3 h-9 w-9 rounded-full bg-secondary p-1"
-                  strokeWidth={3}
-                />
-              </span>
+              reprint === "sending" ? (
+                <KioskSpinner size={56} />
+              ) : (
+                <span className="relative block">
+                  <Printer className="h-16 w-16" strokeWidth={2.5} />
+                  <RotateCcw
+                    className="absolute -bottom-2 -right-3 h-9 w-9 rounded-full bg-brasil-blue-dark p-1"
+                    strokeWidth={3}
+                  />
+                </span>
+              )
             }
           />
-          <ActionButton
-            label="Início"
+          <ActionTile
+            variant="ghost"
+            label="Inicio"
             onClick={() => resetRef.current()}
             icon={<Home className="h-16 w-16" strokeWidth={2.5} />}
           />
@@ -99,43 +114,14 @@ export function DoneScreen({ onReset, strip }: Props) {
 
         {reprint === "error" && (
           <p className="text-2xl font-semibold text-destructive-foreground">
-            Não foi possível enviar a reimpressão.
+            No pudimos enviar la reimpresión.
           </p>
         )}
 
         <p className="text-2xl font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-          Início automático em {seconds}s
+          Inicio automático en {seconds}s
         </p>
       </div>
     </>
-  );
-}
-
-function ActionButton({
-  icon,
-  label,
-  onClick,
-  disabled,
-  completed,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  completed?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`font-display flex min-h-[8.5rem] min-w-[8.5rem] flex-col items-center justify-center gap-3 rounded-[2rem] border-4 px-10 py-6 text-2xl font-black uppercase tracking-[0.12em] transition-transform duration-200 active:scale-[0.97] disabled:active:scale-100 ${
-        completed
-          ? "border-brasil-green-light bg-secondary/70 text-brasil-green-light"
-          : "border-border bg-secondary/70 text-secondary-foreground disabled:opacity-50"
-      }`}
-    >
-      {icon}
-      <span className="whitespace-nowrap">{label}</span>
-    </button>
   );
 }
