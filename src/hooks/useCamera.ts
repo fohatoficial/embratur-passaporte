@@ -2,6 +2,45 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export type CameraStatus = "idle" | "starting" | "live" | "error";
 
+const CONSTRAINTS: MediaStreamConstraints = {
+  video: { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1080 } },
+  audio: false,
+};
+
+/** stream compartilhado: aquecido antes da prévia e reutilizado por useCamera */
+let shared: MediaStream | null = null;
+let pending: Promise<MediaStream> | null = null;
+
+function isAlive(stream: MediaStream | null): stream is MediaStream {
+  return !!stream && stream.getVideoTracks().some((t) => t.readyState === "live");
+}
+
+/** Solicita e inicializa a câmera fora da área visível. Idempotente. */
+export function prewarmCamera(): Promise<MediaStream> {
+  if (isAlive(shared)) return Promise.resolve(shared);
+  if (!pending) {
+    pending = navigator.mediaDevices
+      .getUserMedia(CONSTRAINTS)
+      .then((stream) => {
+        shared = stream;
+        pending = null;
+        return stream;
+      })
+      .catch((err) => {
+        pending = null;
+        shared = null;
+        throw err;
+      });
+  }
+  return pending;
+}
+
+/** Libera a câmera de verdade (fim do atendimento). */
+export function releaseCamera() {
+  shared?.getTracks().forEach((t) => t.stop());
+  shared = null;
+}
+
 /**
  * Webcam do totem. Sem modo demonstrativo: se o acesso falhar, o status vira
  * "error" e nenhuma sequência avança até uma nova tentativa.
