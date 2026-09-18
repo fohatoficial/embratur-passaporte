@@ -1,52 +1,82 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Camera, Eye, ScanFace, Smile } from "lucide-react";
 import { BrasilLogo } from "../BrasilLogo";
-import { FaceGuide } from "../FaceGuide";
+
+const STEP_MS = 2500;
+const OPENING_MS = 1300;
 
 const steps = [
-  "Olhe diretamente para a câmera.",
-  "Posicione seu rosto dentro da marcação.",
-  "Retire óculos escuros, boné ou objetos que cubram o rosto.",
-  "Mantenha uma expressão natural.",
+  { icon: Eye, text: "Mira directamente\na la cámara.", hint: null },
+  {
+    icon: ScanFace,
+    text: "Deja tu rostro\ncompletamente visible.",
+    hint: "Quítate las gafas de sol, la gorra y cualquier objeto que lo cubra.",
+  },
+  { icon: Smile, text: "Relájate y mantén\nuna expresión natural.", hint: null },
 ];
 
 export function InstructionsScreen({ onDone }: { onDone: () => void }) {
+  /** 0..2 orientações · 3 = abrindo a câmera */
+  const [index, setIndex] = useState(0);
+  const doneRef = useRef(onDone);
+  doneRef.current = onDone;
+
+  // sequência única: encerra todos os temporizadores ao desmontar
   useEffect(() => {
-    const timer = setTimeout(onDone, 5000);
-    return () => clearTimeout(timer);
-  }, [onDone]);
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (let i = 1; i <= steps.length; i += 1) {
+      timers.push(setTimeout(() => setIndex(i), STEP_MS * i));
+    }
+    timers.push(
+      setTimeout(() => doneRef.current(), STEP_MS * steps.length + OPENING_MS),
+    );
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  const opening = index >= steps.length;
+  const current = steps[Math.min(index, steps.length - 1)]!;
+  const Icon = opening ? Camera : current.icon;
 
   return (
     <>
       <BrasilLogo className="w-[18rem]" />
 
-      <div className="animate-fade-up flex w-full flex-col items-center gap-14">
-        <h1 className="font-display text-center text-[5.5rem] font-black uppercase leading-none">
-          Prepare-se para a foto
+      <div className="flex w-full flex-col items-center gap-16 text-center">
+        <h1 className="font-display text-[4.5rem] font-black uppercase leading-none">
+          Prepárate para la foto
         </h1>
 
-        <div className="flex w-full items-center gap-14">
-          <div className="h-[30rem] w-[22rem] shrink-0">
-            <FaceGuide />
-          </div>
+        <div
+          key={index}
+          className="animate-journey-in flex min-h-[32rem] w-full flex-col items-center justify-center gap-12"
+        >
+          <span className="flex h-[16rem] w-[16rem] items-center justify-center rounded-full bg-secondary/60">
+            <Icon className="h-32 w-32 text-brasil-yellow" strokeWidth={2.25} />
+          </span>
 
-          <ol className="flex flex-col gap-8">
-            {steps.map((step, i) => (
-              <li key={step} className="flex items-start gap-6">
-                <span className="font-display flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-primary text-4xl font-black text-primary-foreground">
-                  {i + 1}
-                </span>
-                <span className="pt-3 text-4xl font-medium leading-tight">{step}</span>
-              </li>
-            ))}
-          </ol>
+          <p className="font-display max-w-[44rem] whitespace-pre-line text-[3.75rem] font-black uppercase leading-[1.05]">
+            {opening ? "Abriendo la cámara…" : current.text}
+          </p>
+
+          {!opening && current.hint && (
+            <p className="max-w-[40rem] text-[2rem] font-medium leading-snug text-muted-foreground">
+              {current.hint}
+            </p>
+          )}
         </div>
       </div>
 
-      <div className="flex items-center gap-6 rounded-full border-4 border-border bg-secondary px-14 py-8">
-        <span className="h-6 w-6 animate-pulse rounded-full bg-brasil-green-light" />
-        <p className="text-4xl font-semibold uppercase tracking-wide">
-          A câmera abrirá automaticamente
-        </p>
+      <div className="flex items-center gap-5">
+        {steps.map((step, i) => (
+          <span
+            key={step.text}
+            className={`h-4 rounded-full transition-all duration-300 ${
+              i === Math.min(index, steps.length - 1)
+                ? "w-16 bg-brasil-yellow"
+                : "w-4 bg-secondary-foreground/35"
+            }`}
+          />
+        ))}
       </div>
     </>
   );

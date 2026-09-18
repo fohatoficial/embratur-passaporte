@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BrasilLogo } from "../BrasilLogo";
+import { PassportJourney } from "../PassportJourney";
 import { TouchButton } from "../TouchButton";
 import { buildPrintStrip } from "@/lib/buildPrintStrip";
 import { enqueuePrintJob, fetchJob, type PrintJobStatus } from "@/lib/printQueue";
@@ -13,12 +14,13 @@ type Props = {
 
 type Phase = "sending" | "queued" | "processing" | "sent" | "error";
 
+/** estado real do sistema — nenhuma etapa simulada */
 const headline: Record<Phase, string> = {
-  sending: "Enviando sua foto para impressão",
-  queued: "Enviando sua foto para impressão",
-  processing: "Preparando sua impressão",
-  sent: "Sua foto foi enviada para a impressora",
-  error: "Não foi possível enviar sua foto",
+  sending: "Preparando tu foto…",
+  queued: "Enviando a impresión…",
+  processing: "Creando tus copias…",
+  sent: "Tu foto fue enviada a la impresora",
+  error: "No pudimos enviar tu foto",
 };
 
 /**
@@ -98,26 +100,28 @@ export function PrintingScreen({ photo, onFinished }: Props) {
       <BrasilLogo className="w-[18rem]" />
 
       <div className="animate-fade-up flex flex-col items-center gap-14 text-center">
-        <div className="gradient-brasil-bar h-4 w-[32rem] rounded-full" />
-        <h1 className="font-display text-[5.5rem] font-black uppercase leading-none">
+        {phase !== "error" && <PassportJourney size={460} />}
+        <h1 className="font-display text-[3rem] font-black uppercase leading-tight">
           {headline[phase]}
         </h1>
-        <p className="max-w-[46rem] text-4xl font-medium text-muted-foreground">
+        <p className="max-w-[44rem] text-[2rem] font-medium text-muted-foreground">
           {phase === "error"
-            ? "Verifique a conexão e toque para tentar novamente."
+            ? "Revisa la conexión y toca para intentar de nuevo."
             : phase === "sent"
-              ? "Retire sua foto na estação de impressão."
-              : "Aguarde alguns instantes."}
+              ? "Retira tu foto en la estación de impresión."
+              : "Esto tardará solo unos segundos."}
         </p>
       </div>
 
       {phase === "error" ? (
         <div className="flex w-full max-w-[52rem] flex-col gap-8">
-          <TouchButton onClick={retry}>Tentar novamente</TouchButton>
+          <TouchButton onClick={retry} className="text-[2.75rem]">
+            Intentar de nuevo
+          </TouchButton>
         </div>
       ) : (
-        <p className="text-3xl font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-          Passaporte · 5x5
+        <p className="text-2xl font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+          Brasil 2027
         </p>
       )}
     </>

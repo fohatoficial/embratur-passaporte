@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useCamera } from "@/hooks/useCamera";
 import { BrasilLogo } from "../BrasilLogo";
-import { FaceGuide } from "../FaceGuide";
+import { FaceFrameGuide } from "../FaceFrameGuide";
+import { KioskSpinner } from "../KioskSpinner";
 import { TouchButton } from "../TouchButton";
 
 export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => void }) {
@@ -39,16 +40,28 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => vo
     return () => timers.forEach(clearTimeout);
   }, [status, onCaptured]);
 
-  const intense = count !== null && count <= 2;
+  const intense = count !== null && count <= 3;
+  /** sem detecção de rosto em tempo real: orientação fixa e discreta */
+  const guidance = count !== null && count <= 3 ? "Perfecto, no te muevas" : "Centra tu rostro";
 
   return (
     <>
       <BrasilLogo className="w-[16rem]" />
 
-      <div className="relative w-full max-w-[56rem]">
+      <div className="flex w-full flex-col items-center gap-10">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <h1 className="font-display text-[4.25rem] font-black uppercase leading-none">
+            Encuadra tu rostro
+          </h1>
+          <p className="text-[2rem] font-medium text-muted-foreground">
+            Colócate de frente y mira a la cámara.
+          </p>
+        </div>
+
+        {/* moldura quadrada: mesma proporção 1:1 do recorte final */}
         <div
-          className={`relative aspect-[2/3] w-full overflow-hidden rounded-[3rem] border-8 bg-brasil-blue-dark transition-colors duration-500 ${
-            intense ? "border-brasil-yellow" : "border-border"
+          className={`relative aspect-square w-full max-w-[54rem] overflow-hidden rounded-[3rem] border-8 bg-brasil-blue-dark transition-colors duration-500 ${
+            intense ? "border-brasil-green-light motion-safe:animate-pulse" : "border-border"
           }`}
           style={intense ? { boxShadow: "var(--shadow-glow)" } : undefined}
         >
@@ -62,37 +75,39 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => vo
 
           {status === "starting" && (
             <div className="absolute inset-0 flex items-center justify-center bg-brasil-blue-deep">
-              <p className="text-3xl font-semibold uppercase tracking-widest text-muted-foreground">
-                Iniciando câmera
-              </p>
+              <KioskSpinner size={80} />
             </div>
           )}
 
           {status === "error" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-14 bg-brasil-blue-deep px-14 text-center">
-              <p className="font-display text-5xl font-black uppercase leading-tight">
-                Não foi possível acessar a câmera.
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-12 bg-brasil-blue-deep px-14 text-center">
+              <p className="font-display text-[3.25rem] font-black uppercase leading-tight">
+                No pudimos acceder a la cámara.
               </p>
-              <TouchButton onClick={retry}>Tentar novamente</TouchButton>
+              <TouchButton onClick={retry} className="text-[2.5rem]">
+                Intentar de nuevo
+              </TouchButton>
             </div>
           )}
+
+          {status === "live" && <FaceFrameGuide ok={intense} />}
 
           {status === "live" && (
-            <div className="absolute inset-0 p-10">
-              <FaceGuide intense={intense} />
-            </div>
-          )}
-
-          {count !== null && (
-            <div className="absolute inset-0 flex items-center justify-center bg-brasil-blue-dark/35">
-              <span
-                key={count}
-                className={`font-display animate-count-in text-[22rem] font-black leading-none ${
-                  intense ? "text-brasil-yellow" : "text-foreground"
-                }`}
-                style={{ textShadow: "0 0 5rem oklch(0.2 0.08 253 / 85%)" }}
-              >
-                {count}
+            <div className="absolute inset-x-0 bottom-10 flex flex-col items-center gap-6">
+              {count !== null && (
+                <span
+                  key={count}
+                  className={`font-display animate-count-in flex h-32 w-32 items-center justify-center rounded-full text-[5rem] font-black leading-none ${
+                    intense
+                      ? "bg-brasil-green-light text-brasil-blue-dark"
+                      : "bg-brasil-blue-dark/70 text-foreground"
+                  }`}
+                >
+                  {count}
+                </span>
+              )}
+              <span className="font-display rounded-full bg-brasil-blue-dark/70 px-10 py-4 text-[1.75rem] font-black uppercase tracking-[0.15em]">
+                {guidance}
               </span>
             </div>
           )}
@@ -101,14 +116,9 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => vo
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-6 text-center">
-        <h1 className="font-display text-[5rem] font-black uppercase leading-none">
-          Posicione seu rosto
-        </h1>
-        <p className="text-4xl font-medium text-muted-foreground">
-          A foto será feita automaticamente.
-        </p>
-      </div>
+      <p className="text-2xl font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+        Brasil 2027
+      </p>
     </>
   );
 }
