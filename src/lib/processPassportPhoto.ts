@@ -1,5 +1,6 @@
 import { detectFace, PhotoError, type FaceBox } from "./faceDetection";
 import { MASK_SETTINGS, refineCutout } from "./maskRefine";
+import { remotePersonCutout } from "./photoroomCutout";
 import {
   defaultTreatment,
   normalizeLightAndColor,
@@ -67,6 +68,40 @@ async function removeBackgroundOf(canvas: HTMLCanvasElement) {
     return toCanvas(await loadImage(url));
   } finally {
     URL.revokeObjectURL(url);
+  }
+}
+
+/** Confirma que o PNG tem canal alfa utilizável: há pixels opacos e transparentes. */
+function hasUsableAlpha(canvas: HTMLCanvasElement): boolean {
+  const ctx = canvas.getContext("2d");
+  if (!ctx || canvas.width < 64 || canvas.height < 64) return false;
+  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  let opaque = 0;
+  let clear = 0;
+  const step = 4 * 37; // amostragem esparsa
+  for (let i = 3; i < data.length; i += step) {
+    const a = data[i]!;
+    if (a > 200) opaque += 1;
+    else if (a < 24) clear += 1;
+  }
+  const samples = Math.max(1, Math.floor(data.length / step));
+  return opaque / samples > 0.05 && clear / samples > 0.02;
+}
+
+/** Recorte remoto (PhotoRoom) nas dimensões originais, ou null. */
+async function remoteCutoutOf(
+  capture: string,
+  source: HTMLCanvasElement,
+): Promise<HTMLCanvasElement | null> {
+  try {
+    const blob = await canvasToBlob(source, "image/jpeg", 0.95);
+    const dataUrl = await remotePersonCutout(capture, blob);
+    if (!dataUrl) return null;
+    const canvas = toCanvas(await loadImage(dataUrl));
+    if (canvas.width < source.width * 0.5 || !hasUsableAlpha(canvas)) return null;
+    return canvas;
+  } catch {
+    return null;
   }
 }
 
@@ -157,19 +192,22 @@ export async function processPassportPhoto(
   // 1. rosto na captura original
   const face = await detectFace(source);
 
-  // 2. segmentação da pessoa
-  const cutout = await removeBackgroundOf(source);
+  // 2. segmentação da pessoa: PhotoRoom e, se falhar, o recorte local atual
+  const remote = await remoteCutoutOf(capture, source);
+  const cutout = remote ?? (await removeBackgroundOf(source));
 
-  // 3. refinamento do canal alpha
+  // 3. refinamento do canal alpha somente no fallback local
   const framing = calculateDocumentFraming(source.width, source.height, face);
   const cutoutScale = cutout.width / source.width;
   const finalScale = framing.scale / cutoutScale;
-  const refined = refineCutout(
-    cutout,
-    { x: face.centerX * cutoutScale, y: face.centerY * cutoutScale },
-    face.h * cutoutScale,
-    Math.max(0.5, MASK_SETTINGS.featherPx / Math.max(finalScale, 0.01)),
-  );
+  const refined = remote
+    ? cutout
+    : refineCutout(
+        cutout,
+        { x: face.centerX * cutoutScale, y: face.centerY * cutoutScale },
+        face.h * cutoutScale,
+        Math.max(0.5, MASK_SETTINGS.featherPx / Math.max(finalScale, 0.01)),
+      );
 
   // 4. tratamento leve somente na camada da pessoa
   const person = treatPersonLayer(refined, params);

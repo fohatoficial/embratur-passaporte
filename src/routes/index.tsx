@@ -6,6 +6,7 @@ import { KioskViewport } from "@/components/kiosk/KioskViewport";
 import { AttractScreen } from "@/components/kiosk/screens/AttractScreen";
 import { PreCaptureScreen } from "@/components/kiosk/screens/PreCaptureScreen";
 import { releaseCamera } from "@/hooks/useCamera";
+import { resetRemoteCutout } from "@/lib/photoroomCutout";
 import { CameraScreen } from "@/components/kiosk/screens/CameraScreen";
 import { ProcessingScreen } from "@/components/kiosk/screens/ProcessingScreen";
 import { ReviewScreen } from "@/components/kiosk/screens/ReviewScreen";
@@ -52,6 +53,7 @@ function Kiosk() {
   const backToCamera = useCallback(() => {
     setCapture(null);
     setPhoto(null);
+    resetRemoteCutout();
     setStep("camera");
   }, []);
 
@@ -59,6 +61,7 @@ function Kiosk() {
     setCapture(null);
     setPhoto(null);
     setStrip(null);
+    resetRemoteCutout();
     releaseCamera();
     setStep("attract");
   }, []);
@@ -68,6 +71,7 @@ function Kiosk() {
     setCapture(null);
     setPhoto(null);
     setStrip(null);
+    resetRemoteCutout();
     releaseCamera();
   }, []);
 
