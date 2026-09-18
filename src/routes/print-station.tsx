@@ -206,7 +206,20 @@ function PrintStation() {
       reconnectTimer.current = null;
     }
     teardownChannel();
-    setStage((current) => (current === "processando" ? current : "conectando"));
+    const reconnecting = attemptRef.current > 0;
+    setStage((current) =>
+      current === "processando" ? current : reconnecting ? "reconectando" : "conectando",
+    );
+
+    // botão manual só depois de falhas contínuas por 15s
+    if (!manualTimer.current) {
+      manualTimer.current = setTimeout(() => {
+        manualTimer.current = null;
+        if (!mountedRef.current) return;
+        setShowManual(true);
+        setStage((current) => (current === "processando" ? current : "offline"));
+      }, MANUAL_RECOVERY_AFTER_MS);
+    }
 
     const scheduleReconnect = () => {
       if (!mountedRef.current || reconnectTimer.current) return;
@@ -230,6 +243,11 @@ function PrintStation() {
         if (!mountedRef.current) return;
         if (status === "SUBSCRIBED") {
           attemptRef.current = 0;
+          if (manualTimer.current) {
+            clearTimeout(manualTimer.current);
+            manualTimer.current = null;
+          }
+          setShowManual(false);
           setConnected(true);
           setError(null);
           setStage((current) => (current === "processando" ? current : "aguardando"));
@@ -238,7 +256,9 @@ function PrintStation() {
         }
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
           setConnected(false);
-          setStage((current) => (current === "processando" ? current : "offline"));
+          setStage((current) =>
+            current === "processando" || current === "offline" ? current : "reconectando",
+          );
           scheduleReconnect();
         }
       });
@@ -257,11 +277,12 @@ function PrintStation() {
       mountedRef.current = false;
       clearInterval(recovery);
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+      if (manualTimer.current) clearTimeout(manualTimer.current);
       teardownChannel();
     };
   }, [connect, pump, refreshQueue, teardownChannel]);
 
-  const showRecovery = stage === "offline" || !connected;
+  const connecting = stage === "conectando" || stage === "reconectando";
 
   return (
     <main className="min-h-screen bg-brasil-blue-dark px-10 py-14 text-foreground">
