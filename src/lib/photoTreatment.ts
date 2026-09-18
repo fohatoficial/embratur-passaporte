@@ -135,9 +135,18 @@ export function sharpen(
       const alpha = src.data[i + 3] ?? 0;
       out.data[i + 3] = alpha;
       const edge = x === 0 || y === 0 || x === w - 1 || y === h - 1;
+      // a vizinhança precisa ser totalmente opaca: evita halo na transição
+      // entre pessoa e transparência (cabelo, ombros)
+      const interior =
+        !edge &&
+        alpha >= ALPHA_SOLID &&
+        (src.data[i - w * 4 + 3] ?? 0) >= ALPHA_SOLID &&
+        (src.data[i + w * 4 + 3] ?? 0) >= ALPHA_SOLID &&
+        (src.data[i - 4 + 3] ?? 0) >= ALPHA_SOLID &&
+        (src.data[i + 4 + 3] ?? 0) >= ALPHA_SOLID;
       for (let c = 0; c < 3; c += 1) {
         const center = src.data[i + c] ?? 0;
-        if (edge || alpha <= ALPHA_MIN) {
+        if (!interior || alpha <= ALPHA_MIN) {
           out.data[i + c] = center;
           continue;
         }
