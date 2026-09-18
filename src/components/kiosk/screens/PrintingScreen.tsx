@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
   photo: string;
-  onFinished: () => void;
+  /** devolve o documento 2x6 já montado para eventual reimpressão */
+  onFinished: (strip: string | null) => void;
 };
 
 type Phase = "sending" | "queued" | "processing" | "sent" | "error";
