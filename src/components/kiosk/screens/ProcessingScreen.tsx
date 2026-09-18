@@ -18,20 +18,34 @@ const messages = {
 
 type FailKind = keyof typeof messages;
 
+/** tempo mínimo de exibição da narrativa */
+const MIN_MS = 5000;
+
 export function ProcessingScreen({ capture, onDone, onBackToCamera }: Props) {
   const [failed, setFailed] = useState<FailKind | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [minDone, setMinDone] = useState(false);
+  const [ready, setReady] = useState<string | null>(null);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
 
+  // tempo mínimo, contado independentemente do processamento real
+  useEffect(() => {
+    setMinDone(false);
+    const timer = setTimeout(() => setMinDone(true), MIN_MS);
+    return () => clearTimeout(timer);
+  }, [attempt]);
+
+  // operação real: começa de imediato e o resultado fica guardado em memória
   useEffect(() => {
     let cancelled = false;
     setFailed(null);
+    setReady(null);
 
     void (async () => {
       try {
         const result = await processPassportPhoto(capture);
-        if (!cancelled) doneRef.current(result);
+        if (!cancelled) setReady(result);
       } catch (err) {
         if (cancelled) return;
         setFailed(isPhotoError(err) ? err.code : "generic");
@@ -42,6 +56,11 @@ export function ProcessingScreen({ capture, onDone, onBackToCamera }: Props) {
       cancelled = true;
     };
   }, [capture, attempt]);
+
+  // avanço apenas quando as duas condições estão satisfeitas
+  useEffect(() => {
+    if (ready && minDone) doneRef.current(ready);
+  }, [ready, minDone]);
 
   const retry = useCallback(() => setAttempt((a) => a + 1), []);
 
@@ -56,7 +75,11 @@ export function ProcessingScreen({ capture, onDone, onBackToCamera }: Props) {
           </h1>
         ) : (
           <>
-            <ImmersiveBrazilLoader size={280} label="Preparando tu foto…" />
+            <ImmersiveBrazilLoader
+              variant="photoProcessing"
+              size={280}
+              label="Preparando tu foto…"
+            />
             <p className="text-[1.75rem] font-medium text-muted-foreground">
               Esto tardará solo unos segundos.
             </p>

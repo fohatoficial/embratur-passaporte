@@ -4,7 +4,8 @@ import { BootSplash } from "@/components/kiosk/BootSplash";
 import { KioskFrame } from "@/components/kiosk/KioskFrame";
 import { KioskViewport } from "@/components/kiosk/KioskViewport";
 import { AttractScreen } from "@/components/kiosk/screens/AttractScreen";
-import { InstructionsScreen } from "@/components/kiosk/screens/InstructionsScreen";
+import { PreCaptureScreen } from "@/components/kiosk/screens/PreCaptureScreen";
+import { releaseCamera } from "@/hooks/useCamera";
 import { CameraScreen } from "@/components/kiosk/screens/CameraScreen";
 import { ProcessingScreen } from "@/components/kiosk/screens/ProcessingScreen";
 import { ReviewScreen } from "@/components/kiosk/screens/ReviewScreen";
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/")({
 
 type Step =
   | "attract"
-  | "instructions"
+  | "precapture"
   | "camera"
   | "processing"
   | "review"
@@ -58,23 +59,26 @@ function Kiosk() {
     setCapture(null);
     setPhoto(null);
     setStrip(null);
+    releaseCamera();
     setStep("attract");
   }, []);
 
-  // limpeza ao desmontar: nada de foto guardada
+  // limpeza ao desmontar: nada de foto guardada e câmera liberada
   useEffect(() => () => {
     setCapture(null);
     setPhoto(null);
     setStrip(null);
+    releaseCamera();
   }, []);
+
 
   return (
     <>
     <BootSplash />
     <KioskViewport>
       <KioskFrame>
-        {step === "attract" && <AttractScreen onStart={() => setStep("instructions")} />}
-        {step === "instructions" && <InstructionsScreen onDone={() => setStep("camera")} />}
+        {step === "attract" && <AttractScreen onStart={() => setStep("precapture")} />}
+        {step === "precapture" && <PreCaptureScreen onReady={() => setStep("camera")} />}
         {step === "camera" && <CameraScreen onCaptured={handleCaptured} />}
         {step === "processing" && capture && (
           <ProcessingScreen

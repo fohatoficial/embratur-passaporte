@@ -65,3 +65,27 @@ export const picLine: IconifyIcon = {
   ...base,
   body: '<path fill="currentColor" d="M16 8.5a.5.5 0 1 1-1 0a.5.5 0 0 1 1 0"/><path fill="currentColor" d="M14.121 14.879a1 1 0 1 0 1.415 1.414l-.708-.707zm2.829-1.415l.707-.707a1 1 0 0 0-1.414 0zm3.328 4.743a1 1 0 0 0 1.414-1.414l-.707.707zm-10.4-7.571l.708-.707a1 1 0 0 0-1.415 0zm5.158 6.571a1 1 0 0 0 1.414-1.414l-.707.707zM4 4v1h16V3H4zm17 1h-1v14h2V5zm-1 15v-1H4v2h16zM3 19h1V5H2v14zm11.828-3.414l.708.707l2.12-2.121l-.706-.708l-.707-.707l-2.122 2.122zm2.122-2.122l-.707.707l4.035 4.036l.707-.707l.707-.707l-4.035-4.036zm-7.071-2.828l-.707.707l5.864 5.864l.707-.707l.707-.707l-5.864-5.864zM3 17.515l.707.707l6.879-6.879l-.707-.707l-.707-.707l-6.88 6.879zM16 8.5h-1a.5.5 0 0 1 .5-.5v2A1.5 1.5 0 0 0 17 8.5zm-.5.5V8a.5.5 0 0 1 .5.5h-2a1.5 1.5 0 0 0 1.5 1.5zm-.5-.5h1a.5.5 0 0 1-.5.5V7A1.5 1.5 0 0 0 14 8.5zm.5-.5v1a.5.5 0 0 1-.5-.5h2A1.5 1.5 0 0 0 15.5 7zM4 20v-1H2a2 2 0 0 0 2 2zm17-1h-1v2a2 2 0 0 0 2-2zM20 4v1h2a2 2 0 0 0-2-2zM4 4V3a2 2 0 0 0-2 2h2z"/>',
 };
+
+/** mingcute:camera-line */
+export const cameraLine: IconifyIcon = {
+  ...base,
+  body: '<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M17 7h1m-2 5a4 4 0 1 1-8 0a4 4 0 0 1 8 0ZM5 20h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z"/>',
+};
+
+/** mingcute:emoji-line — rosto / expressão */
+export const emojiLine: IconifyIcon = {
+  ...base,
+  body: '<path fill="currentColor" d="M9 9.5a.5.5 0 1 1-1 0a.5.5 0 0 1 1 0m7 0a.5.5 0 1 1-1 0a.5.5 0 0 1 1 0"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M8.5 14.57A4.98 4.98 0 0 0 12 16a4.98 4.98 0 0 0 3.5-1.43M21 12a9 9 0 1 1-18 0a9 9 0 0 1 18 0ZM9 9.5a.5.5 0 1 1-1 0a.5.5 0 0 1 1 0Zm7 0a.5.5 0 1 1-1 0a.5.5 0 0 1 1 0Z"/>',
+};
+
+/** mingcute:scan-line — cantos de enquadramento */
+export const scanLine: IconifyIcon = {
+  ...base,
+  body: '<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M4 8V5a1 1 0 0 1 1-1h4M4 16v3a1 1 0 0 0 1 1h4M20 8V5a1 1 0 0 0-1-1h-4m5 12v3a1 1 0 0 1-1 1h-4"/>',
+};
+
+/** mingcute:print-line */
+export const printLine: IconifyIcon = {
+  ...base,
+  body: '<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 18h3a1 1 0 0 0 1-1v-7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v7a1 1 0 0 0 1 1h3m8-7h2M7 4h10v4H7zm0 11h10v6H7z"/>',
+};

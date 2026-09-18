@@ -16,12 +16,15 @@ type Phase = "sending" | "queued" | "processing" | "sent" | "error";
 
 /** estado real do sistema — nenhuma etapa simulada */
 const headline: Record<Phase, string> = {
-  sending: "Preparando tu foto…",
-  queued: "Enviando a impresión…",
-  processing: "Creando tus copias…",
+  sending: "Preparando la impresión…",
+  queued: "Enviando a la estación…",
+  processing: "Impresión solicitada.",
   sent: "Tu foto fue enviada a la impresora",
   error: "No pudimos enviar tu foto",
 };
+
+/** tempo mínimo de exibição da narrativa */
+const MIN_MS = 5000;
 
 /**
  * O totem não imprime: monta o documento 2x6 e o envia para a fila da
@@ -32,8 +35,10 @@ export function PrintingScreen({ photo, onFinished }: Props) {
   const [attempt, setAttempt] = useState(0);
   const jobIdRef = useRef<string>(crypto.randomUUID());
   const stripRef = useRef<string | null>(null);
+  const startedRef = useRef(Date.now());
   const doneRef = useRef(onFinished);
   doneRef.current = onFinished;
+
 
   // envio (idempotente: mesma dedupe_key em cada tentativa)
   useEffect(() => {
@@ -86,10 +91,12 @@ export function PrintingScreen({ photo, onFinished }: Props) {
     };
   }, [phase]);
 
-  // encerra a jornada alguns segundos após a confirmação
+  // encerra a jornada após a confirmação, respeitando o tempo mínimo da narrativa
   useEffect(() => {
     if (phase !== "sent") return;
-    const timer = setTimeout(() => doneRef.current(stripRef.current), 4000);
+    const elapsed = Date.now() - startedRef.current;
+    const wait = Math.max(2500, MIN_MS - elapsed);
+    const timer = setTimeout(() => doneRef.current(stripRef.current), wait);
     return () => clearTimeout(timer);
   }, [phase]);
 
@@ -105,7 +112,11 @@ export function PrintingScreen({ photo, onFinished }: Props) {
             {headline[phase]}
           </h1>
         ) : (
-          <ImmersiveBrazilLoader size={280} label={headline[phase]} />
+          <ImmersiveBrazilLoader
+            variant="printPreparation"
+            size={280}
+            label={headline[phase]}
+          />
         )}
         <p className="max-w-[44rem] text-[1.75rem] font-medium text-muted-foreground">
           {phase === "error"
