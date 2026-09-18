@@ -33,29 +33,51 @@ export const Route = createFileRoute("/print-station")({
   component: PrintStation,
 });
 
-type Stage = "offline" | "aguardando" | "preparando" | "imprimindo" | "erro";
+type Stage = "conectando" | "aguardando" | "processando" | "offline";
 
 const stageLabel: Record<Stage, string> = {
-  offline: "Estação desativada",
-  aguardando: "Online · aguardando trabalhos",
-  preparando: "Preparando trabalho",
-  imprimindo: "Imprimindo",
-  erro: "Erro no último trabalho",
+  conectando: "Conectando…",
+  aguardando: "Online — aguardando trabalhos",
+  processando: "Processando impressão",
+  offline: "Offline — tentar novamente",
 };
 
+const STATION_STORAGE_KEY = "totem-print-station-id";
+const RECONNECT_DELAYS = [2000, 4000, 8000, 15000, 30000];
+
+/** Reutiliza o identificador da estação salvo no navegador. */
+function resolveStationId(): string {
+  if (typeof window === "undefined") return STATION_ID;
+  try {
+    const saved = window.localStorage.getItem(STATION_STORAGE_KEY);
+    if (saved) return saved;
+    window.localStorage.setItem(STATION_STORAGE_KEY, STATION_ID);
+  } catch {
+    /* armazenamento indisponível: segue com o padrão */
+  }
+  return STATION_ID;
+}
+
 function PrintStation() {
-  const [active, setActive] = useState(false);
-  const [stage, setStage] = useState<Stage>("offline");
+  const [stage, setStage] = useState<Stage>("conectando");
   const [connected, setConnected] = useState(false);
   const [pending, setPending] = useState(0);
   const [lastReceived, setLastReceived] = useState<string | null>(null);
   const [lastFailed, setLastFailed] = useState<PrintJob | null>(null);
   const [strip, setStrip] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [stationId, setStationId] = useState(STATION_ID);
 
-  const activeRef = useRef(false);
   const busyRef = useRef(false);
   const readyResolve = useRef<(() => void) | null>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const attemptRef = useRef(0);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    setStationId(resolveStationId());
+  }, []);
 
   const refreshQueue = useCallback(async () => {
     try {
@@ -93,19 +115,19 @@ function PrintStation() {
 
   /** Processa um trabalho por vez; nunca dois window.print() para o mesmo ID. */
   const pump = useCallback(async () => {
-    if (!activeRef.current || busyRef.current) return;
+    if (busyRef.current) return;
     busyRef.current = true;
     try {
       for (;;) {
-        if (!activeRef.current) break;
+        if (!mountedRef.current) break;
         const jobs = await refreshQueue();
         const next = jobs[0];
         if (!next) {
-          setStage("aguardando");
+          setStage((current) => (current === "offline" ? current : "aguardando"));
           break;
         }
 
-        setStage("preparando");
+        setStage("processando");
         const claimed = await claimJob(next);
         if (!claimed) continue; // outro cliente assumiu
 
@@ -113,7 +135,6 @@ function PrintStation() {
           const url = await signedImageUrl(claimed.image_path);
           setStrip(url);
           await waitForReady();
-          setStage("imprimindo");
           const after = waitForAfterPrint();
           window.print();
           await after;
@@ -123,7 +144,6 @@ function PrintStation() {
           const message = err instanceof Error ? err.message : "Falha ao imprimir.";
           await markFailed(claimed.id, message);
           setError(message);
-          setStage("erro");
         } finally {
           setStrip(null);
           readyResolve.current = null;
@@ -137,36 +157,77 @@ function PrintStation() {
     }
   }, [refreshQueue]);
 
-  // realtime apenas acorda o processador; a tabela continua sendo a fila oficial
-  useEffect(() => {
+  const teardownChannel = useCallback(() => {
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+  }, []);
+
+  /** Uma única inscrição por página; reconexão com intervalos progressivos. */
+  const connect = useCallback(() => {
+    if (!mountedRef.current) return;
+    if (reconnectTimer.current) {
+      clearTimeout(reconnectTimer.current);
+      reconnectTimer.current = null;
+    }
+    teardownChannel();
+    setStage((current) => (current === "processando" ? current : "conectando"));
+
+    const scheduleReconnect = () => {
+      if (!mountedRef.current || reconnectTimer.current) return;
+      const delay =
+        RECONNECT_DELAYS[Math.min(attemptRef.current, RECONNECT_DELAYS.length - 1)] ?? 30000;
+      attemptRef.current += 1;
+      reconnectTimer.current = setTimeout(() => {
+        reconnectTimer.current = null;
+        connect();
+      }, delay);
+    };
+
     const channel = supabase
-      .channel("print-station")
+      .channel(`print-station-${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "print_jobs" },
         () => void pump(),
       )
       .subscribe((status) => {
-        const ok = status === "SUBSCRIBED";
-        setConnected(ok);
-        if (ok) void pump();
+        if (!mountedRef.current) return;
+        if (status === "SUBSCRIBED") {
+          attemptRef.current = 0;
+          setConnected(true);
+          setError(null);
+          setStage((current) => (current === "processando" ? current : "aguardando"));
+          void pump();
+          return;
+        }
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          setConnected(false);
+          setStage((current) => (current === "processando" ? current : "offline"));
+          scheduleReconnect();
+        }
       });
 
+    channelRef.current = channel;
+  }, [pump, teardownChannel]);
+
+  // ativação automática ao carregar a página
+  useEffect(() => {
+    mountedRef.current = true;
     void refreshQueue();
+    connect();
     const recovery = setInterval(() => void pump(), 15000);
 
     return () => {
+      mountedRef.current = false;
       clearInterval(recovery);
-      supabase.removeChannel(channel);
+      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+      teardownChannel();
     };
-  }, [pump, refreshQueue]);
+  }, [connect, pump, refreshQueue, teardownChannel]);
 
-  const activate = useCallback(() => {
-    activeRef.current = true;
-    setActive(true);
-    setStage("aguardando");
-    void pump();
-  }, [pump]);
+  const showRecovery = stage === "offline" || !connected;
 
   return (
     <main className="min-h-screen bg-brasil-blue-dark px-10 py-14 text-foreground">
@@ -176,13 +237,13 @@ function PrintStation() {
             Estação de impressão
           </h1>
           <p className="text-xl font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-            {STATION_ID}
+            {stationId}
           </p>
         </header>
 
         <dl className="grid grid-cols-2 gap-6">
           <Info label="Conexão" value={connected ? "Conectada" : "Reconectando"} />
-          <Info label="Estado" value={stageLabel[active ? stage : "offline"]} />
+          <Info label="Estado" value={stageLabel[stage]} />
           <Info label="Trabalhos pendentes" value={String(pending)} />
           <Info
             label="Último trabalho recebido"
@@ -197,13 +258,17 @@ function PrintStation() {
         )}
 
         <div className="flex flex-col gap-4">
-          <button
-            onClick={activate}
-            disabled={active}
-            className="font-display rounded-full bg-primary px-10 py-6 text-3xl font-black uppercase text-primary-foreground disabled:opacity-60"
-          >
-            {active ? "Estação ativa" : "Ativar estação"}
-          </button>
+          {showRecovery && (
+            <button
+              onClick={() => {
+                attemptRef.current = 0;
+                connect();
+              }}
+              className="font-display rounded-full bg-primary px-10 py-6 text-3xl font-black uppercase text-primary-foreground"
+            >
+              Ativar estação
+            </button>
+          )}
           <button
             onClick={() => void refreshQueue()}
             className="font-display rounded-full border-4 border-border bg-secondary px-10 py-6 text-2xl font-black uppercase text-secondary-foreground"
