@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Printer } from "lucide-react";
+import { Printer, RefreshCw } from "lucide-react";
 import { PrintArea } from "@/components/kiosk/PrintArea";
+import { KioskSpinner } from "@/components/kiosk/KioskSpinner";
 import { buildTestStrip } from "@/lib/buildTestStrip";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -35,10 +36,11 @@ export const Route = createFileRoute("/print-station")({
   component: PrintStation,
 });
 
-type Stage = "conectando" | "aguardando" | "processando" | "offline";
+type Stage = "conectando" | "reconectando" | "aguardando" | "processando" | "offline";
 
 const stageLabel: Record<Stage, string> = {
-  conectando: "Conectando…",
+  conectando: "Conectando à estação",
+  reconectando: "Reconectando…",
   aguardando: "Online — aguardando trabalhos",
   processando: "Processando impressão",
   offline: "Offline — tentar novamente",
@@ -46,6 +48,8 @@ const stageLabel: Record<Stage, string> = {
 
 const STATION_STORAGE_KEY = "totem-print-station-id";
 const RECONNECT_DELAYS = [2000, 4000, 8000, 15000, 30000];
+/** só depois disso o botão manual aparece */
+const MANUAL_RECOVERY_AFTER_MS = 15000;
 
 /** Reutiliza o identificador da estação salvo no navegador. */
 function resolveStationId(): string {
