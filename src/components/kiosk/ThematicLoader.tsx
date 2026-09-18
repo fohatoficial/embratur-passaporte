@@ -44,7 +44,7 @@ export function ThematicLoader({ label, size = 240 }: Props) {
       <div className="flex items-center justify-center" style={{ width: size, height: size }}>
         <Icon
           key={index}
-          icon={ICONS[index]}
+          icon={ICONS[index] ?? footballLine}
           aria-hidden
           className="text-brasil-yellow transition-all ease-out"
           style={{
