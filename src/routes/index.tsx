@@ -105,5 +105,6 @@ function Kiosk() {
         {step === "done" && <DoneScreen onReset={reset} strip={strip} />}
       </KioskFrame>
     </KioskViewport>
+    </>
   );
 }
