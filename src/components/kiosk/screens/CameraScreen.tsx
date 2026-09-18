@@ -161,7 +161,7 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => vo
             </div>
           )}
 
-          {status === "live" && <FaceFrameGuide ok={intense} />}
+          {status === "live" && <FaceFrameGuide ok={intense || framing === "ok"} />}
 
           {status === "live" && (
             <div className="absolute inset-x-0 bottom-10 flex flex-col items-center gap-6">
