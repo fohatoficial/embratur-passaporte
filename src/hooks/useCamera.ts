@@ -49,7 +49,8 @@ export function prewarmCamera(): Promise<MediaStream> {
   if (!pending) {
     pending = navigator.mediaDevices
       .getUserMedia(CONSTRAINTS)
-      .then((stream) => {
+      .then(async (stream) => {
+        await applyContinuousControls(stream);
         shared = stream;
         pending = null;
         return stream;
