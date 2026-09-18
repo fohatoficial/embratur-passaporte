@@ -51,8 +51,8 @@ export function useCamera(active: boolean) {
   const [status, setStatus] = useState<CameraStatus>("idle");
   const [attempt, setAttempt] = useState(0);
 
+  /** solta o vídeo, mas mantém o stream compartilhado aquecido */
   const stop = useCallback(() => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
   }, []);
@@ -68,18 +68,8 @@ export function useCamera(active: boolean) {
     const start = async () => {
       setStatus("starting");
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "user",
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-          },
-          audio: false,
-        });
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
+        const stream = await prewarmCamera();
+        if (cancelled) return;
         streamRef.current = stream;
         const video = videoRef.current;
         if (!video) {
