@@ -296,8 +296,24 @@ function PrintStation() {
           </p>
         </header>
 
+        {/* indicador de conexão: layout estável, só o conteúdo central muda */}
+        <div className="flex min-h-[9rem] flex-col items-center justify-center gap-5 rounded-3xl bg-secondary/40">
+          {connecting ? (
+            <>
+              <KioskSpinner size={64} />
+              <p className="font-display text-2xl font-black uppercase tracking-[0.2em] text-muted-foreground">
+                {stage === "reconectando" ? "Reconectando…" : "Conectando à estação"}
+              </p>
+            </>
+          ) : (
+            <p className="font-display text-3xl font-black uppercase leading-tight">
+              {stageLabel[stage]}
+            </p>
+          )}
+        </div>
+
         <dl className="grid grid-cols-2 gap-6">
-          <Info label="Conexão" value={connected ? "Conectada" : "Reconectando"} />
+          <Info label="Conexão" value={connected ? "Conectada" : stageLabel[stage]} />
           <Info label="Estado" value={stageLabel[stage]} />
           <Info label="Trabalhos pendentes" value={String(pending)} />
           <Info
@@ -313,15 +329,17 @@ function PrintStation() {
         )}
 
         <div className="flex flex-col gap-4">
-          {showRecovery && (
+          {showManual && (
             <button
               onClick={() => {
                 attemptRef.current = 0;
+                setShowManual(false);
                 connect();
               }}
-              className="font-display rounded-full bg-primary px-10 py-6 text-3xl font-black uppercase text-primary-foreground"
+              className="font-display flex items-center justify-center gap-4 rounded-full bg-primary px-10 py-6 text-3xl font-black uppercase text-primary-foreground"
             >
-              Ativar estação
+              <RefreshCw className="h-9 w-9" strokeWidth={2.5} />
+              Tentar novamente
             </button>
           )}
           <button
@@ -332,7 +350,7 @@ function PrintStation() {
           </button>
           <button
             onClick={() => void runTestPrint()}
-            disabled={testing}
+            disabled={testing || !connected}
             className="font-display flex items-center justify-center gap-4 rounded-full border-4 border-border bg-secondary px-10 py-6 text-2xl font-black uppercase text-secondary-foreground disabled:opacity-50"
           >
             <Printer className="h-9 w-9" strokeWidth={2.5} />
