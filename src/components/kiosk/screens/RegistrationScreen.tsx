@@ -319,7 +319,8 @@ function PrivacyNotice({ onClose, onChannel }: { onClose: () => void; onChannel:
         </p>
         <p>
           La fotografía y los archivos de impresión serán conservados únicamente durante el tiempo
-          necesario para completar la experiencia y resolver posibles incidencias operativas. Los
+          necesario para completar la experiencia y resolver posibles incidencias operativas. Tu fotografía también podrá usarse para crear versiones digitales temporales, accesibles
+          mediante un código QR durante 24 horas. Los
           datos de registro y los comprobantes de autorización se conservarán durante el plazo
           definido por Embratur para esta activación y conforme a las obligaciones aplicables.
         </p>

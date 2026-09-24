@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BootSplash } from "@/components/kiosk/BootSplash";
 import { KioskFrame } from "@/components/kiosk/KioskFrame";
 import { KioskViewport } from "@/components/kiosk/KioskViewport";
@@ -13,6 +13,8 @@ import { ProcessingScreen } from "@/components/kiosk/screens/ProcessingScreen";
 import { ReviewScreen } from "@/components/kiosk/screens/ReviewScreen";
 import { PrintingScreen } from "@/components/kiosk/screens/PrintingScreen";
 import { DoneScreen } from "@/components/kiosk/screens/DoneScreen";
+import { QrShareScreen } from "@/components/kiosk/screens/QrShareScreen";
+import { startPhotoShare, type ShareResult } from "@/lib/photoShare";
 
 const title = "Brasil 2027 · Sua foto para o passaporte | EMBRATUR";
 const description =
@@ -38,6 +40,7 @@ type Step =
   | "processing"
   | "review"
   | "printing"
+  | "share"
   | "done";
 
 function Kiosk() {
@@ -47,6 +50,21 @@ function Kiosk() {
   const [strip, setStrip] = useState<string | null>(null);
   // somente identificadores em memória; nunca nome/telefone
   const [participant, setParticipant] = useState<Participant | null>(null);
+  // compartilhamento digital: um por atendimento, independente da impressão
+  const shareRef = useRef<Promise<ShareResult | null> | null>(null);
+
+  const clearShare = useCallback(() => {
+    const pending = shareRef.current;
+    shareRef.current = null;
+    void pending?.then((r) => r && URL.revokeObjectURL(r.previewUrl));
+  }, []);
+
+  const confirmPhoto = useCallback(() => {
+    if (photo && participant && !shareRef.current) {
+      shareRef.current = startPhotoShare(photo, participant.sessionId, participant.participantId);
+    }
+    setStep("printing");
+  }, [photo, participant]);
 
   const handleCaptured = useCallback((captured: string) => {
     setCapture(captured);
@@ -66,11 +84,12 @@ function Kiosk() {
     setPhoto(null);
     setStrip(null);
     setParticipant(null);
+    clearShare();
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     resetRemoteCutout();
     releaseCamera();
     setStep("attract");
-  }, []);
+  }, [clearShare]);
 
   // limpeza ao desmontar: nada de foto guardada e câmera liberada
   useEffect(() => () => {
@@ -112,7 +131,7 @@ function Kiosk() {
         {step === "review" && photo && (
           <ReviewScreen
             photo={photo}
-            onConfirm={() => setStep("printing")}
+            onConfirm={confirmPhoto}
             onRetake={backToCamera}
           />
         )}
@@ -121,9 +140,12 @@ function Kiosk() {
             photo={photo}
             onFinished={(printed) => {
               setStrip(printed);
-              setStep("done");
+              setStep(shareRef.current ? "share" : "done");
             }}
           />
+        )}
+        {step === "share" && shareRef.current && (
+          <QrShareScreen share={shareRef.current} onNext={() => setStep("done")} />
         )}
         {step === "done" && <DoneScreen onReset={reset} strip={strip} />}
       </KioskFrame>

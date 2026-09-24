@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PrintStationRouteImport } from './routes/print-station'
+import { Route as MiFotoTokenRouteImport } from './routes/mi-foto.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,40 @@ const PrintStationRoute = PrintStationRouteImport.update({
   path: '/print-station',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MiFotoTokenRoute = MiFotoTokenRouteImport.update({
+  id: '/mi-foto/$token',
+  path: '/mi-foto/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/print-station': typeof PrintStationRoute
+  '/mi-foto/$token': typeof MiFotoTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/print-station': typeof PrintStationRoute
+  '/mi-foto/$token': typeof MiFotoTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/print-station': typeof PrintStationRoute
+  '/mi-foto/$token': typeof MiFotoTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/print-station'
+  fullPaths: '/' | '/print-station' | '/mi-foto/$token'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/print-station'
-  id: '__root__' | '/' | '/print-station'
+  to: '/' | '/print-station' | '/mi-foto/$token'
+  id: '__root__' | '/' | '/print-station' | '/mi-foto/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PrintStationRoute: typeof PrintStationRoute
+  MiFotoTokenRoute: typeof MiFotoTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrintStationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mi-foto/$token': {
+      id: '/mi-foto/$token'
+      path: '/mi-foto/$token'
+      fullPath: '/mi-foto/$token'
+      preLoaderRoute: typeof MiFotoTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PrintStationRoute: PrintStationRoute,
+  MiFotoTokenRoute: MiFotoTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

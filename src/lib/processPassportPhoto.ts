@@ -10,8 +10,9 @@ import {
 
 export { PhotoError } from "./faceDetection";
 
-export const PHOTO_W = 1200;
-export const PHOTO_H = 1200; // 1:1 (corte físico 5x5 cm)
+/** Imagem mestre 1440x1440: fonte única da impressão e das artes sociais. */
+export const PHOTO_W = 1440;
+export const PHOTO_H = 1440; // 1:1 (corte físico 5x5 cm)
 
 /**
  * Constantes de enquadramento (retrato do peito para cima).
