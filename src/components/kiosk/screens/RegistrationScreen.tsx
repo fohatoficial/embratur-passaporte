@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { registerActivationParticipant } from "@/lib/registerParticipant.functions";
 import { COUNTRIES, normalizeName, normalizeWhatsapp } from "@/lib/participant";
 import { BrasilLogo } from "../BrasilLogo";
+import { DialCodeSelect } from "../DialCodeSelect";
 import { KioskSpinner } from "../KioskSpinner";
 
 const PRIVACY_URL = "https://embratur.com.br/institucional/ouvidoria/";
