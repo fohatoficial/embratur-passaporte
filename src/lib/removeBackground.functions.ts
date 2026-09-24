@@ -35,9 +35,12 @@ export const removePhotoBackground = createServerFn({ method: "POST" })
     if (file.size === 0 || file.size > MAX_BYTES) throw new Error("invalid-size");
     return { file };
   })
-  .handler(async ({ data }) => {
+  .handler(async ({ data }): Promise<{ png: string | null; error: string | null }> => {
     const apiKey = process.env["PHOTOROOM_API_KEY"];
-    if (!apiKey) throw new Error("photoroom-unconfigured");
+    // Falhas da operadora (cota, chave, timeout) NÃO são lançadas: um erro
+    // lançado aqui derrubaria a tela do visitante. Devolvemos null e o
+    // chamador usa o recorte local.
+    if (!apiKey) return { png: null, error: "photoroom-unconfigured" };
 
     const form = new FormData();
     form.append("image_file", data.file, "capture");
@@ -58,6 +61,7 @@ export const removePhotoBackground = createServerFn({ method: "POST" })
       });
 
       if (!res.ok) throw new Error(`photoroom-http-${res.status}`);
+      void 0;
       const contentType = res.headers.get("content-type") ?? "";
       if (!contentType.includes("image/png")) throw new Error("photoroom-invalid-type");
 
