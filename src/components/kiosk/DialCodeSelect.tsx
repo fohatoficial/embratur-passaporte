@@ -17,7 +17,7 @@ type Props = {
 export function DialCodeSelect({ value, disabled, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const selected = COUNTRIES.find((c) => c.code === value) ?? COUNTRIES[0];
+  const selected = COUNTRIES.find((c) => c.code === value) ?? { code: value, name: value, dial: "" };
 
   useEffect(() => {
     if (!open) return;
