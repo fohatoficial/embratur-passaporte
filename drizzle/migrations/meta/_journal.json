@@ -15,6 +15,13 @@
       "when": 1789688664223,
       "tag": "0001_print_jobs_storage_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790292397444,
+      "tag": "0002_activation_participants",
+      "breakpoints": true
     }
   ]
 }

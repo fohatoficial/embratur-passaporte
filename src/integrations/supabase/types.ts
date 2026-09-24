@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      activation_participants: {
+        Row: {
+          country_code: string
+          created_at: string
+          expires_at: string
+          id: string
+          marketing_opt_in: boolean
+          marketing_opt_in_at: string | null
+          name: string
+          privacy_accepted_at: string
+          privacy_notice_version: string
+          session_id: string
+          whatsapp_e164: string
+        }
+        Insert: {
+          country_code: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          marketing_opt_in?: boolean
+          marketing_opt_in_at?: string | null
+          name: string
+          privacy_accepted_at: string
+          privacy_notice_version: string
+          session_id: string
+          whatsapp_e164: string
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          marketing_opt_in?: boolean
+          marketing_opt_in_at?: string | null
+          name?: string
+          privacy_accepted_at?: string
+          privacy_notice_version?: string
+          session_id?: string
+          whatsapp_e164?: string
+        }
+        Relationships: []
+      }
       print_jobs: {
         Row: {
           attempts: number
@@ -61,6 +103,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_activation_data: { Args: never; Returns: number }
       cleanup_print_jobs: { Args: never; Returns: number }
     }
     Enums: {
