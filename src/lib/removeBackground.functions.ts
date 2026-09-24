@@ -35,9 +35,12 @@ export const removePhotoBackground = createServerFn({ method: "POST" })
     if (file.size === 0 || file.size > MAX_BYTES) throw new Error("invalid-size");
     return { file };
   })
-  .handler(async ({ data }) => {
+  .handler(async ({ data }): Promise<{ png: string | null; error: string | null }> => {
     const apiKey = process.env["PHOTOROOM_API_KEY"];
-    if (!apiKey) throw new Error("photoroom-unconfigured");
+    // Falhas da operadora (cota, chave, timeout) NÃO são lançadas: um erro
+    // lançado aqui derrubaria a tela do visitante. Devolvemos null e o
+    // chamador usa o recorte local.
+    if (!apiKey) return { png: null, error: "photoroom-unconfigured" };
 
     const form = new FormData();
     form.append("image_file", data.file, "capture");
@@ -65,7 +68,7 @@ export const removePhotoBackground = createServerFn({ method: "POST" })
       if (bytes.byteLength < 2048) throw new Error("photoroom-empty");
       if (!isPng(bytes)) throw new Error("photoroom-invalid-png");
 
-      return { png: toBase64(bytes) };
+      return { png: toBase64(bytes), error: null };
     } catch (err) {
       const code =
         err instanceof Error
@@ -75,7 +78,7 @@ export const removePhotoBackground = createServerFn({ method: "POST" })
           : "photoroom-failed";
       // apenas o código técnico; nenhum dado da foto e nenhuma credencial
       console.error("[remove-photo-background]", code);
-      throw new Error(code);
+      return { png: null, error: code };
     } finally {
       clearTimeout(timer);
     }

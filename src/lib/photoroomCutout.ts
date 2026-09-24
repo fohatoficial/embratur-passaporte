@@ -14,8 +14,12 @@ async function request(blob: Blob): Promise<string | null> {
   try {
     const form = new FormData();
     form.append("image", new File([blob], "capture.jpg", { type: blob.type }));
-    const { png } = await removePhotoBackground({ data: form });
-    return png ? `data:image/png;base64,${png}` : null;
+    const { png, error } = await removePhotoBackground({ data: form });
+    if (!png) {
+      if (import.meta.env.DEV) console.debug("[photoroom] fallback", error ?? "failed");
+      return null;
+    }
+    return `data:image/png;base64,${png}`;
   } catch (err) {
     if (import.meta.env.DEV) {
       console.debug("[photoroom] fallback", err instanceof Error ? err.message : "failed");
