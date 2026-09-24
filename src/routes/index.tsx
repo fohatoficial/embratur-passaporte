@@ -4,6 +4,7 @@ import { BootSplash } from "@/components/kiosk/BootSplash";
 import { KioskFrame } from "@/components/kiosk/KioskFrame";
 import { KioskViewport } from "@/components/kiosk/KioskViewport";
 import { AttractScreen } from "@/components/kiosk/screens/AttractScreen";
+import { RegistrationScreen, type Participant } from "@/components/kiosk/screens/RegistrationScreen";
 import { PreCaptureScreen } from "@/components/kiosk/screens/PreCaptureScreen";
 import { releaseCamera } from "@/hooks/useCamera";
 import { resetRemoteCutout } from "@/lib/photoroomCutout";
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/")({
 
 type Step =
   | "attract"
+  | "register"
   | "precapture"
   | "camera"
   | "processing"
@@ -43,6 +45,8 @@ function Kiosk() {
   const [capture, setCapture] = useState<string | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [strip, setStrip] = useState<string | null>(null);
+  // somente identificadores em memória; nunca nome/telefone
+  const [participant, setParticipant] = useState<Participant | null>(null);
 
   const handleCaptured = useCallback((captured: string) => {
     setCapture(captured);
@@ -61,6 +65,8 @@ function Kiosk() {
     setCapture(null);
     setPhoto(null);
     setStrip(null);
+    setParticipant(null);
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     resetRemoteCutout();
     releaseCamera();
     setStep("attract");
@@ -81,7 +87,16 @@ function Kiosk() {
     <BootSplash />
     <KioskViewport>
       <KioskFrame>
-        {step === "attract" && <AttractScreen onStart={() => setStep("precapture")} />}
+        {step === "attract" && <AttractScreen onStart={() => setStep("register")} />}
+        {step === "register" && (
+          <RegistrationScreen
+            onBack={() => setStep("attract")}
+            onRegistered={(p) => {
+              setParticipant(p);
+              setStep("precapture");
+            }}
+          />
+        )}
         {step === "precapture" && <PreCaptureScreen onReady={() => setStep("camera")} />}
         {step === "camera" && <CameraScreen onCaptured={handleCaptured} />}
         {step === "processing" && capture && (
