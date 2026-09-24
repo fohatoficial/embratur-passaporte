@@ -146,22 +146,14 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
             WhatsApp
           </span>
           <div className="flex gap-4">
-            <select
-              aria-label="País"
+            <DialCodeSelect
               value={country}
               disabled={saving}
-              onChange={(e) => {
-                setCountry(e.target.value as CountryCode);
+              onChange={(code) => {
+                setCountry(code);
                 setPhone("");
               }}
-              className="w-[15rem] shrink-0 rounded-[1.75rem] border-4 border-transparent bg-card px-6 text-[2.25rem] font-bold text-card-foreground outline-none focus:border-brasil-yellow"
-            >
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.code} {c.dial}
-                </option>
-              ))}
-            </select>
+            />
             <input
               type="tel"
               inputMode="tel"
