@@ -164,22 +164,10 @@ export function DoneScreen({ onReset, strip, share, onViewQr }: Props) {
             className={tile}
             label={reprintLabel}
             aria-label={reprintAria}
-            disabled={!strip || reprint !== "idle"}
+            disabled={!strip || reprint === "sending" || reprint === "done"}
             completed={reprint === "done"}
             onClick={handleReprint}
-            icon={
-              reprint === "sending" ? (
-                <KioskSpinner size={56} />
-              ) : (
-                <span className="relative block">
-                  <Printer className="h-16 w-16" strokeWidth={2.5} />
-                  <RotateCcw
-                    className="absolute -bottom-2 -right-3 h-9 w-9 rounded-full bg-brasil-blue-dark p-1"
-                    strokeWidth={3}
-                  />
-                </span>
-              )
-            }
+            icon={reprintIcon}
           />
           <ActionTile
             variant="ghost"
@@ -192,7 +180,7 @@ export function DoneScreen({ onReset, strip, share, onViewQr }: Props) {
 
         {reprint === "error" && (
           <p className="text-2xl font-semibold text-destructive-foreground">
-            No pudimos enviar la reimpresión.
+            No pudimos reenviar la impresión. Inténtalo de nuevo.
           </p>
         )}
 
