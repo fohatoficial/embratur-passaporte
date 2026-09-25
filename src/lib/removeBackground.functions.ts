@@ -35,7 +35,7 @@ export const removePhotoBackground = createServerFn({ method: "POST" })
     if (file.size === 0 || file.size > MAX_BYTES) throw new Error("invalid-size");
     return { file };
   })
-  .handler(async ({ request, data }): Promise<{ png: string | null; error: string | null }> => {
+  .handler(async ({ data }): Promise<{ png: string | null; error: string | null }> => {
     const apiKey = process.env["PHOTOROOM_API_KEY"];
     // Falhas da operadora (cota, chave, timeout) NÃO são lançadas: um erro
     // lançado aqui derrubaria a tela do visitante. Devolvemos null e o
@@ -51,14 +51,6 @@ export const removePhotoBackground = createServerFn({ method: "POST" })
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-    // Se o visitante sair da tela e o navegador cancelar o pedido, encerra
-    // também a chamada externa: nada segue processando após a desconexão.
-    const onClientAbort = () => controller.abort();
-    request.signal.addEventListener("abort", onClientAbort, { once: true });
-    if (request.signal.aborted) {
-      clearTimeout(timer);
-      return { png: null, error: "client-aborted" };
-    }
 
     try {
       const res = await fetch(ENDPOINT, {
@@ -91,6 +83,5 @@ export const removePhotoBackground = createServerFn({ method: "POST" })
       return { png: null, error: code };
     } finally {
       clearTimeout(timer);
-      request.signal.removeEventListener("abort", onClientAbort);
     }
   });
