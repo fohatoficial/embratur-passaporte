@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Home, Printer, QrCode, RotateCcw } from "lucide-react";
+import { Check, Home, Printer, QrCode, RotateCcw } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { getPhotoShare } from "@/lib/photoShare.functions";
 import type { ShareResult } from "@/lib/photoShare";
@@ -87,15 +87,39 @@ export function DoneScreen({ onReset, strip, share, onViewQr }: Props) {
     })();
   }, [strip, reprint]);
 
+  // Três estados: idle (REIMPRIMIR) · sending (só spinner, sem texto visível)
+  // · done (ícone verde + HECHO). Os nomes acessíveis descrevem cada fase.
+  const reprintIcon =
+    reprint === "sending" ? (
+      <KioskSpinner size={56} />
+    ) : reprint === "done" ? (
+      <Check className="h-16 w-16" strokeWidth={3} />
+    ) : (
+      <span className="relative block">
+        <Printer className="h-16 w-16" strokeWidth={2.5} />
+        <RotateCcw
+          className="absolute -bottom-2 -right-3 h-9 w-9 rounded-full bg-brasil-blue-dark p-1"
+          strokeWidth={3}
+        />
+      </span>
+    );
+
   const reprintLabel =
-    reprint === "sending"
-      ? "Enviando otra copia…"
-      : reprint === "done"
-        ? "Hecho"
-        : "Reimprimir";
-  // O texto visível vira HECHO, mas o nome acessível continua explicando o que aconteceu.
+    reprint === "sending" ? (
+      // invisível só para o cartão manter as mesmas dimensões
+      <span className="invisible">Enviando otra copia</span>
+    ) : reprint === "done" ? (
+      "Hecho"
+    ) : (
+      "Reimprimir"
+    );
+
   const reprintAria =
-    reprint === "done" ? "Reimpresión enviada" : undefined;
+    reprint === "sending"
+      ? "Enviando otra copia"
+      : reprint === "done"
+        ? "Reimpresión enviada"
+        : undefined;
 
   const tile = qrAvailable ? "px-4! text-[1.85rem]! tracking-[0.04em]!" : "";
 
@@ -140,22 +164,10 @@ export function DoneScreen({ onReset, strip, share, onViewQr }: Props) {
             className={tile}
             label={reprintLabel}
             aria-label={reprintAria}
-            disabled={!strip || reprint !== "idle"}
+            disabled={!strip || reprint === "sending" || reprint === "done"}
             completed={reprint === "done"}
             onClick={handleReprint}
-            icon={
-              reprint === "sending" ? (
-                <KioskSpinner size={56} />
-              ) : (
-                <span className="relative block">
-                  <Printer className="h-16 w-16" strokeWidth={2.5} />
-                  <RotateCcw
-                    className="absolute -bottom-2 -right-3 h-9 w-9 rounded-full bg-brasil-blue-dark p-1"
-                    strokeWidth={3}
-                  />
-                </span>
-              )
-            }
+            icon={reprintIcon}
           />
           <ActionTile
             variant="ghost"
@@ -168,7 +180,7 @@ export function DoneScreen({ onReset, strip, share, onViewQr }: Props) {
 
         {reprint === "error" && (
           <p className="text-2xl font-semibold text-destructive-foreground">
-            No pudimos enviar la reimpresión.
+            No pudimos reenviar la impresión. Inténtalo de nuevo.
           </p>
         )}
 
