@@ -35,7 +35,7 @@ export const removePhotoBackground = createServerFn({ method: "POST" })
     if (file.size === 0 || file.size > MAX_BYTES) throw new Error("invalid-size");
     return { file };
   })
-  .handler(async ({ data }): Promise<{ png: string | null; error: string | null }> => {
+  .handler(async ({ request, data }): Promise<{ png: string | null; error: string | null }> => {
     const apiKey = process.env["PHOTOROOM_API_KEY"];
     // Falhas da operadora (cota, chave, timeout) NÃO são lançadas: um erro
     // lançado aqui derrubaria a tela do visitante. Devolvemos null e o
