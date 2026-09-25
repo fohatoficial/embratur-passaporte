@@ -94,7 +94,7 @@ export function DoneScreen({ onReset, strip, share, onViewQr }: Props) {
         ? "Reimpresión enviada"
         : "Reimprimir";
 
-  const tile = qrAvailable ? "px-4 text-[1.85rem] tracking-[0.04em]" : "";
+  const tile = qrAvailable ? "px-4! text-[1.85rem]! tracking-[0.04em]!" : "";
 
   return (
     <>
