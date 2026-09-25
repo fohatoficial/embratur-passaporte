@@ -15,6 +15,7 @@ import { PrintingScreen } from "@/components/kiosk/screens/PrintingScreen";
 import { DoneScreen } from "@/components/kiosk/screens/DoneScreen";
 import { QrShareScreen } from "@/components/kiosk/screens/QrShareScreen";
 import { startPhotoShare, type ShareResult } from "@/lib/photoShare";
+import { deletePhotoShare } from "@/lib/photoShare.functions";
 
 const title = "Brasil 2027 · Sua foto para o passaporte | EMBRATUR";
 const description =
@@ -79,6 +80,20 @@ function Kiosk() {
     setStep("camera");
   }, []);
 
+  // TOMAR OTRA FOTO após erro: descarta só esta captura (foto, tira, arte e
+  // link digital), mantém cadastro e sessão, e volta direto à câmera.
+  const retakeAfterError = useCallback(() => {
+    const pending = shareRef.current;
+    shareRef.current = null;
+    void pending?.then((r) => {
+      if (!r) return;
+      URL.revokeObjectURL(r.previewUrl);
+      void deletePhotoShare({ data: { token: r.token } }).catch(() => undefined);
+    });
+    setStrip(null);
+    backToCamera();
+  }, [backToCamera]);
+
   const reset = useCallback(() => {
     setCapture(null);
     setPhoto(null);
@@ -138,6 +153,7 @@ function Kiosk() {
         {step === "printing" && photo && (
           <PrintingScreen
             photo={photo}
+            onRetake={retakeAfterError}
             onFinished={(printed) => {
               setStrip(printed);
               setStep(shareRef.current ? "share" : "done");

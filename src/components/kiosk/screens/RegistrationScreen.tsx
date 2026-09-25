@@ -27,7 +27,6 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
   const [name, setName] = useState("");
   const [country, setCountry] = useState<CountryCode>("AR");
   const [phone, setPhone] = useState("");
-  const [privacy, setPrivacy] = useState(false);
   const [marketing, setMarketing] = useState(false);
   const [touched, setTouched] = useState({ name: false, phone: false });
   const [attempted, setAttempted] = useState(false);
@@ -38,7 +37,7 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
 
   const validName = normalizeName(name);
   const validPhone = normalizeWhatsapp(phone, country);
-  const canSubmit = !!validName && !!validPhone && privacy && !saving;
+  const canSubmit = !!validName && !!validPhone && !saving;
   const showNameError = (touched.name || attempted) && !validName;
   const showPhoneError = (touched.phone || attempted) && !validPhone;
   const dial = COUNTRIES.find((c) => c.code === country)?.dial ?? "";
@@ -47,7 +46,6 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
     blurActive();
     setName("");
     setPhone("");
-    setPrivacy(false);
     setMarketing(false);
     onBack();
   };
@@ -55,7 +53,7 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
   const submit = async () => {
     setAttempted(true);
     blurActive();
-    if (!validName || !validPhone || !privacy || submitting.current) return;
+    if (!validName || !validPhone || submitting.current) return;
     submitting.current = true;
     setSaving(true);
     setFailed(false);
@@ -185,14 +183,16 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
           )}
         </div>
 
-        <Checkbox checked={privacy} disabled={saving} onChange={setPrivacy}>
-          He leído el{" "}
+        <Checkbox checked={marketing} disabled={saving} onChange={setMarketing}>
+          Quiero recibir novedades y comunicaciones de Visit Brasil por WhatsApp.
+        </Checkbox>
+
+        <p className="text-center text-[1.6rem] font-medium leading-snug text-muted-foreground">
+          Al tocar ACEPTAR Y CONTINUAR, confirmas que has leído el{" "}
           <button
             type="button"
             disabled={saving}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
+            onClick={() => {
               blurActive();
               setModal("notice");
             }}
@@ -200,12 +200,8 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
           >
             Aviso de Privacidad
           </button>{" "}
-          y autorizo el tratamiento de mis datos para realizar esta experiencia.
-        </Checkbox>
-
-        <Checkbox checked={marketing} disabled={saving} onChange={setMarketing}>
-          Quiero recibir novedades y comunicaciones de Visit Brasil por WhatsApp.
-        </Checkbox>
+          y autorizas el tratamiento de tus datos para realizar esta experiencia.
+        </p>
 
         {failed && (
           <p role="alert" className="text-center text-[1.9rem] font-semibold text-brasil-yellow">
@@ -227,7 +223,7 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
             "Intentar de nuevo"
           ) : (
             <>
-              Continuar
+              Aceptar y continuar
               <ArrowRight className="h-12 w-12" strokeWidth={3} />
             </>
           )}
@@ -299,30 +295,30 @@ function PrivacyNotice({ onClose, onChannel }: { onClose: () => void; onChannel:
         </p>
         <p>
           Estos datos serán utilizados por{" "}
-          <strong>Embratur – Agencia Brasileña de Promoción Internacional del Turismo</strong> para
-          registrar tu participación, procesar y preparar tu fotografía, generar las copias
-          impresas, gestionar eventuales reimpresiones y mantener la seguridad y el correcto
-          funcionamiento de la experiencia.
+          <strong>Embratur – Agencia Brasileña de Promoción Internacional del Turismo</strong>{" "}
+          exclusivamente para registrar tu participación, procesar y preparar tu fotografía,
+          generar las copias impresas y la versión digital, gestionar eventuales reimpresiones,
+          brindar soporte y mantener la seguridad y el correcto funcionamiento de la activación.
         </p>
         <p>
           Tu fotografía podrá ser procesada por proveedores tecnológicos contratados para la
-          eliminación del fondo, el almacenamiento temporal, la generación del archivo y el envío a
-          la estación de impresión.
+          eliminación del fondo, el almacenamiento, la generación de los archivos, el envío a la
+          estación de impresión y la disponibilidad de la versión digital mediante QR Code.
         </p>
         <p>
-          Tus datos{" "}
+          Tus datos y fotografías{" "}
           <strong>
-            no serán utilizados para campañas de marketing sin una autorización específica y
-            separada
+            no serán utilizados en campañas publicitarias, publicaciones institucionales o redes
+            sociales de Embratur sin una autorización específica y separada
           </strong>
           .
         </p>
         <p>
-          La fotografía y los archivos de impresión serán conservados únicamente durante el tiempo
-          necesario para completar la experiencia y resolver posibles incidencias operativas. Tu fotografía también podrá usarse para crear versiones digitales temporales, accesibles
-          mediante un código QR durante 24 horas. Los
-          datos de registro y los comprobantes de autorización se conservarán durante el plazo
-          definido por Embratur para esta activación y conforme a las obligaciones aplicables.
+          Tus datos de registro, comprobantes de autorización, fotografía y archivos relacionados
+          podrán conservarse durante un plazo máximo de <strong>12 meses</strong>, exclusivamente
+          para soporte, registro y gestión de esta activación. Después de ese plazo serán
+          eliminados o anonimizados de forma segura, salvo que una obligación aplicable exija su
+          conservación.
         </p>
         <p>
           Puedes solicitar información sobre el tratamiento de tus datos, acceso, corrección,
@@ -336,7 +332,10 @@ function PrivacyNotice({ onClose, onChannel }: { onClose: () => void; onChannel:
           </button>
           .
         </p>
-        <p>Al marcar la autorización y continuar, declaras haber leído y comprendido este aviso.</p>
+        <p>
+          Al tocar <strong>ACEPTAR Y CONTINUAR</strong>, declaras haber leído y comprendido este
+          aviso y autorizas el tratamiento de tus datos para las finalidades informadas.
+        </p>
       </div>
       <CloseButton onClick={onClose} />
     </div>

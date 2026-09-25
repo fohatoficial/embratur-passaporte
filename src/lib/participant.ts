@@ -1,7 +1,7 @@
 import { parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
 
 /** Versão do Aviso de Privacidad exibido no totem. */
-export const PRIVACY_NOTICE_VERSION = "2026-09-24";
+export const PRIVACY_NOTICE_VERSION = "2026-09-25";
 
 export const COUNTRIES: { code: CountryCode; name: string; dial: string }[] = [
   { code: "AR", name: "Argentina", dial: "+54" },

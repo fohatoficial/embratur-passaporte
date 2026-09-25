@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { SHARE_BUCKET, SHARE_TTL_HOURS, TOKEN_PATTERN, shareUrlFor } from "./shareConfig";
+import { SHARE_BUCKET, SHARE_RETENTION_MONTHS, TOKEN_PATTERN, shareUrlFor } from "./shareConfig";
 
 /**
  * create-photo-share / get-photo-share / delete-photo-share.
@@ -75,6 +75,7 @@ export const createPhotoShare = createServerFn({ method: "POST" })
       .from("photo_shares")
       .select("id")
       .eq("session_id", data.sessionId)
+      .is("deleted_at", null)
       .maybeSingle();
     if (existing) return fail("already-exists");
 
@@ -92,7 +93,9 @@ export const createPhotoShare = createServerFn({ method: "POST" })
       return fail("upload-failed");
     }
 
-    const expiresAt = new Date(Date.now() + SHARE_TTL_HOURS * 3600_000).toISOString();
+    const expiry = new Date();
+    expiry.setUTCMonth(expiry.getUTCMonth() + SHARE_RETENTION_MONTHS);
+    const expiresAt = expiry.toISOString();
     const { error } = await supabaseAdmin.from("photo_shares").insert({
       id: shareId,
       participant_id: participant.id,

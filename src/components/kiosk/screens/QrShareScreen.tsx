@@ -139,12 +139,7 @@ export function QrShareScreen({ share, onNext }: Props) {
             </div>
           </div>
 
-          <div className="flex flex-col items-center gap-3">
-            <p className="text-[2.1rem] font-semibold">Apunta la cámara de tu celular al código QR.</p>
-            <p className="text-[1.5rem] font-semibold uppercase tracking-[0.2em] text-brasil-green-light">
-              Disponible durante 24 horas
-            </p>
-          </div>
+          <p className="text-[2.1rem] font-semibold">Apunta la cámara de tu celular al código QR.</p>
         </div>
       )}
 

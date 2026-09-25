@@ -2,10 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Loader2, Share2, Trash2 } from "lucide-react";
+import { Loader2, Share2 } from "lucide-react";
 import logoAsset from "@/assets/logo-brasil.png.asset.json";
 import ballAsset from "@/assets/ball.png.asset.json";
-import { deletePhotoShare, getPhotoShareStatus, signPhotoShareStory } from "@/lib/photoShare.functions";
+import { getPhotoShareStatus, signPhotoShareStory } from "@/lib/photoShare.functions";
 import { TOKEN_PATTERN } from "@/lib/shareConfig";
 
 const title = "Tu recuerdo de Brasil está listo · Visit Brasil";
@@ -65,16 +65,13 @@ function MiFoto() {
   const valid = TOKEN_PATTERN.test(token);
   const getStatus = useServerFn(getPhotoShareStatus);
   const signStory = useServerFn(signPhotoShareStory);
-  const removeShare = useServerFn(deletePhotoShare);
-  const [busy, setBusy] = useState<"share" | "delete" | null>(null);
+  const [busy, setBusy] = useState<"share" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [confirming, setConfirming] = useState(false);
-  const [deleted, setDeleted] = useState(false);
 
   const query = useQuery({
     queryKey: ["photo-share-status", token],
     queryFn: () => getStatus({ data: { token } }),
-    enabled: valid && !deleted,
+    enabled: valid,
     staleTime: 60_000,
     retry: 1,
   });
@@ -110,31 +107,15 @@ function MiFoto() {
     }
   };
 
-  const confirmDelete = async () => {
-    setBusy("delete");
-    try {
-      const res = await removeShare({ data: { token } });
-      if (res.ok) {
-        setDeleted(true);
-        setConfirming(false);
-      } else setNotice("No pudimos eliminar tu foto. Intenta de nuevo.");
-    } catch {
-      setNotice("No pudimos eliminar tu foto. Intenta de nuevo.");
-    } finally {
-      setBusy(null);
-    }
-  };
-
   const status = query.data?.status;
 
   let content: React.ReactNode;
-  if (deleted || status === "deleted") {
-    content = <StateBlock title="Esta foto fue eliminada" />;
+  if (status === "deleted") {
+    content = <StateBlock title="Este enlace ya no está disponible." />;
   } else if (!valid || status === "expired") {
     content = (
       <StateBlock
-        title="Este enlace ya expiró"
-        text="Por seguridad, la foto estuvo disponible durante 24 horas."
+        title="Este enlace ya no está disponible."
       />
     );
   } else if (query.isError) {
@@ -189,30 +170,6 @@ function MiFoto() {
           </p>
         )}
 
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-brasil-green-light">
-          Disponible durante 24 horas.
-        </p>
-
-        {confirming ? (
-          <div className="flex w-full flex-col gap-3 rounded-2xl border-2 border-border bg-secondary p-4" role="alertdialog" aria-label="Confirmar eliminación">
-            <p className="text-sm font-semibold">¿Eliminar tu foto ahora? Esta acción no se puede deshacer.</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => setConfirming(false)} disabled={busy === "delete"} className="rounded-full border-2 border-border py-3 text-sm font-bold uppercase">
-                Cancelar
-              </button>
-              <button onClick={confirmDelete} disabled={busy === "delete"} className="rounded-full bg-destructive py-3 text-sm font-bold uppercase text-destructive-foreground">
-                {busy === "delete" ? "Eliminando…" : "Eliminar"}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setConfirming(true)}
-            className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground/80 underline underline-offset-4"
-          >
-            <Trash2 className="h-3.5 w-3.5" /> Eliminar mi foto ahora
-          </button>
-        )}
       </>
     );
   }

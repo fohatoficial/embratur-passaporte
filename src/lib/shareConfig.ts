@@ -2,7 +2,8 @@
 export const PUBLIC_SHARE_ORIGIN = "https://totempassportefit.lovable.app";
 
 export const SHARE_BUCKET = "visitor-social-photos";
-export const SHARE_TTL_HOURS = 24;
+/** Retenção do compartilhamento (aviso 2026-09-25). Nunca indefinida. */
+export const SHARE_RETENTION_MONTHS = 12;
 
 export const shareUrlFor = (token: string) => `${PUBLIC_SHARE_ORIGIN}/mi-foto/${token}`;
 
