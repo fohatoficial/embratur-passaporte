@@ -139,6 +139,7 @@ export function DoneScreen({ onReset, strip, share, onViewQr }: Props) {
             variant="ghost"
             className={tile}
             label={reprintLabel}
+            aria-label={reprintAria}
             disabled={!strip || reprint !== "idle"}
             completed={reprint === "done"}
             onClick={handleReprint}
