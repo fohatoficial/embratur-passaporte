@@ -1,0 +1,2 @@
+ALTER TABLE public.photo_shares ALTER COLUMN post_path DROP NOT NULL;
+COMMENT ON COLUMN public.photo_shares.post_path IS 'DEPRECATED: publicação vertical removida; novos registros usam apenas story_path. Mantida (nullable) para registros antigos até a limpeza de 24h.';

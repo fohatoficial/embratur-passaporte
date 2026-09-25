@@ -63,7 +63,7 @@ export type Database = {
           expires_at: string
           id: string
           participant_id: string | null
-          post_path: string
+          post_path: string | null
           session_id: string
           story_path: string
           token_hash: string
@@ -74,7 +74,7 @@ export type Database = {
           expires_at: string
           id?: string
           participant_id?: string | null
-          post_path: string
+          post_path?: string | null
           session_id: string
           story_path: string
           token_hash: string
@@ -85,7 +85,7 @@ export type Database = {
           expires_at?: string
           id?: string
           participant_id?: string | null
-          post_path?: string
+          post_path?: string | null
           session_id?: string
           story_path?: string
           token_hash?: string
