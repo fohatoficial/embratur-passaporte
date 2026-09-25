@@ -36,6 +36,13 @@
       "when": 1790295291524,
       "tag": "0004_photo_shares_post_path_optional",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790332633720,
+      "tag": "0005_photo_shares_retake_and_retention",
+      "breakpoints": true
     }
   ]
 }
