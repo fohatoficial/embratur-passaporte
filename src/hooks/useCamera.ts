@@ -171,6 +171,3 @@ export function useCamera(active: boolean) {
 
   return { videoRef, status, freezeFrame, retry, stop };
 }
-
-  return { videoRef, status, capture, retry, stop };
-}
