@@ -73,9 +73,7 @@ export const removePhotoBackground = createServerFn({ method: "POST" })
       const code =
         err instanceof Error
           ? err.name === "AbortError"
-            ? request.signal.aborted
-              ? "client-aborted"
-              : "photoroom-timeout"
+            ? "photoroom-timeout"
             : err.message
           : "photoroom-failed";
       // apenas o código técnico; nenhum dado da foto e nenhuma credencial
