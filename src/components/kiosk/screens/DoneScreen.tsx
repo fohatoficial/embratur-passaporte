@@ -45,7 +45,7 @@ export function DoneScreen({ onReset, strip, share, onViewQr }: Props) {
     return () => clearInterval(tick);
   }, []);
 
-  // VER QR só com compartilhamento válido: token existente, dentro das 24h e não excluído
+  // VER QR só com compartilhamento válido: token existente, dentro do prazo e não excluído
   useEffect(() => {
     if (!share || !onViewQr) return;
     let alive = true;
