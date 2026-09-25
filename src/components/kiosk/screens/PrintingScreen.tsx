@@ -158,13 +158,13 @@ export function PrintingScreen({ photo, onFinished, onRetake }: Props) {
         ) : (
           <ImmersiveBrazilLoader variant="printPreparation" size={280} label={headline[phase]} />
         )}
-        <p className="max-w-[44rem] text-[1.75rem] font-medium text-muted-foreground">
-          {isError
-            ? failText[fail ?? "queue"]
-            : phase === "sent"
-              ? "Retira tu foto en la estación de impresión."
+        {isError || phase !== "sent" ? (
+          <p className="max-w-[44rem] text-[1.75rem] font-medium text-muted-foreground">
+            {isError
+              ? failText[fail ?? "queue"]
               : "Esto tardará solo unos segundos."}
-        </p>
+          </p>
+        ) : null}
       </div>
 
       {isError ? (
