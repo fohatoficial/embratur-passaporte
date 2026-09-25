@@ -91,8 +91,11 @@ export function DoneScreen({ onReset, strip, share, onViewQr }: Props) {
     reprint === "sending"
       ? "Enviando otra copia…"
       : reprint === "done"
-        ? "Reimpresión enviada"
+        ? "Hecho"
         : "Reimprimir";
+  // O texto visível vira HECHO, mas o nome acessível continua explicando o que aconteceu.
+  const reprintAria =
+    reprint === "done" ? "Reimpresión enviada" : undefined;
 
   const tile = qrAvailable ? "px-4! text-[1.85rem]! tracking-[0.04em]!" : "";
 
@@ -136,6 +139,7 @@ export function DoneScreen({ onReset, strip, share, onViewQr }: Props) {
             variant="ghost"
             className={tile}
             label={reprintLabel}
+            aria-label={reprintAria}
             disabled={!strip || reprint !== "idle"}
             completed={reprint === "done"}
             onClick={handleReprint}
