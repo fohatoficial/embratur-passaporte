@@ -1,5 +1,5 @@
 /**
- * Artes sociais (Story 1080x1920 e Publicação 1080x1350) desenhadas em
+ * Artes sociais (Story 1080x1920) desenhadas em
  * Canvas a partir da imagem mestre 1440x1440 já aprovada. Nenhum filtro é
  * aplicado à fotografia; nada é capturado do DOM; todos os assets são locais.
  */
@@ -210,38 +210,15 @@ function drawStory(a: Assets) {
   return canvas;
 }
 
-function drawPost(a: Assets) {
-  const W = 1080;
-  const H = 1350;
-  const { canvas, ctx } = newCanvas(W, H);
-  background(ctx, W, H, a.ball);
-  brandBar(ctx, 0, W, 12);
-  brandBar(ctx, H - 12, W, 12);
-
-  drawLogo(ctx, a.logo, W / 2, 70, 300, 130);
-
-  const size = 700;
-  const x = (W - size) / 2;
-  const y = 230;
-  framedPhoto(ctx, a.photo, x, y, size, 20);
-  stamp(ctx, x + size - 56, y + 6, 0.85);
-
-  fittedText(ctx, HEADLINE[0], W / 2, 1022, 900, 56, W - 180, C.white);
-  fittedText(ctx, HEADLINE[1], W / 2, 1086, 900, 56, W - 180, C.yellow);
-  fittedText(ctx, COMPLEMENT, W / 2, 1152, 600, 34, W - 200, C.white);
-  fittedText(ctx, FOOTER, W / 2, 1250, 700, 24, W - 220, C.yellow, 5);
-  return canvas;
-}
-
 function toPng(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("png"))), "image/png"),
   );
 }
 
-export type SocialAssets = { story: Blob; post: Blob };
+export type SocialAssets = { story: Blob };
 
-/** Gera os dois PNGs (sem metadados: saída direta do canvas). */
+/** Gera o PNG do Story (sem metadados: saída direta do canvas). */
 export async function buildSocialPhotoAssets(master: string): Promise<SocialAssets> {
   await ensureFonts();
   const [photo, logo, ball] = await Promise.all([
@@ -254,10 +231,5 @@ export async function buildSocialPhotoAssets(master: string): Promise<SocialAsse
   const storyCanvas = drawStory(assets);
   const story = await toPng(storyCanvas);
   storyCanvas.width = storyCanvas.height = 0;
-  // cede o quadro para a animação antes da segunda arte
-  await new Promise((r) => setTimeout(r, 0));
-  const postCanvas = drawPost(assets);
-  const post = await toPng(postCanvas);
-  postCanvas.width = postCanvas.height = 0;
-  return { story, post };
+  return { story };
 }
