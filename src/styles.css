@@ -50,6 +50,8 @@
   --color-brasil-cyan: var(--brasil-cyan);
   --color-brasil-orange: var(--brasil-orange);
   --color-brasil-red: var(--brasil-red);
+  --color-paper: var(--paper);
+  --color-paper-ink: var(--paper-ink);
 }
 
 :root {
@@ -64,6 +66,8 @@
   --brasil-cyan: oklch(0.74 0.145 228.2);
   --brasil-orange: oklch(0.71 0.194 45.1);
   --brasil-red: oklch(0.629 0.256 27.1);
+  --paper: oklch(1 0 0);
+  --paper-ink: oklch(0.349 0.108 253.1);
 
   --background: var(--brasil-blue);
   --foreground: oklch(1 0 0);

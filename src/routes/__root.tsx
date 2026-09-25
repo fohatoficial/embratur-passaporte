@@ -11,6 +11,12 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import "@fontsource/archivo/400.css";
+import "@fontsource/archivo/500.css";
+import "@fontsource/archivo/600.css";
+import "@fontsource/archivo/700.css";
+import "@fontsource/archivo/800.css";
+import "@fontsource/archivo/900.css";
 
 function NotFoundComponent() {
   return (
@@ -88,12 +94,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "stylesheet",
         href: appCss,
-      },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap",
       },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
     ],

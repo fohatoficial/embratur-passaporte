@@ -56,6 +56,42 @@ export type Database = {
         }
         Relationships: []
       }
+      photo_shares: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          expires_at: string
+          id: string
+          participant_id: string | null
+          post_path: string
+          session_id: string
+          story_path: string
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          expires_at: string
+          id?: string
+          participant_id?: string | null
+          post_path: string
+          session_id: string
+          story_path: string
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          expires_at?: string
+          id?: string
+          participant_id?: string | null
+          post_path?: string
+          session_id?: string
+          story_path?: string
+          token_hash?: string
+        }
+        Relationships: []
+      }
       print_jobs: {
         Row: {
           attempts: number
@@ -104,6 +140,7 @@ export type Database = {
     }
     Functions: {
       cleanup_activation_data: { Args: never; Returns: number }
+      cleanup_photo_shares: { Args: never; Returns: number }
       cleanup_print_jobs: { Args: never; Returns: number }
     }
     Enums: {
