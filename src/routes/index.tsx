@@ -147,7 +147,12 @@ function Kiosk() {
         {step === "share" && shareRef.current && (
           <QrShareScreen share={shareRef.current} onNext={() => setStep("done")} />
         )}
-        {step === "done" && <DoneScreen onReset={reset} strip={strip} />}
+        {step === "done" && <DoneScreen
+            onReset={reset}
+            strip={strip}
+            share={shareRef.current}
+            onViewQr={() => setStep("share")}
+          />}
       </KioskFrame>
     </KioskViewport>
     </>

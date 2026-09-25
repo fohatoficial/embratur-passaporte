@@ -1,7 +1,7 @@
 import { buildSocialPhotoAssets } from "./buildSocialPhotoAssets";
 import { createPhotoShare } from "./photoShare.functions";
 
-export type ShareResult = { url: string; expiresAt: string; previewUrl: string };
+export type ShareResult = { token: string; url: string; expiresAt: string; previewUrl: string };
 
 /**
  * Operação independente da impressão: gera as artes a partir da imagem
@@ -21,7 +21,7 @@ export async function startPhotoShare(
     form.append("post", new File([post], "post.png", { type: "image/png" }));
     const res = await createPhotoShare({ data: form });
     if (!res.ok) return null;
-    return { url: res.url, expiresAt: res.expiresAt, previewUrl: URL.createObjectURL(story) };
+    return { token: res.token, url: res.url, expiresAt: res.expiresAt, previewUrl: URL.createObjectURL(story) };
   } catch {
     return null;
   }

@@ -1,21 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Home, Printer, RotateCcw } from "lucide-react";
+import { Home, Printer, QrCode, RotateCcw } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { getPhotoShare } from "@/lib/photoShare.functions";
+import type { ShareResult } from "@/lib/photoShare";
 import { BrasilLogo } from "../BrasilLogo";
 import { ActionTile } from "../ActionTile";
 import { KioskSpinner } from "../KioskSpinner";
 import { enqueuePrintJob } from "@/lib/printQueue";
 
 const AUTO_RESET_SECONDS = 60;
+const SHARE_CHECK_MS = 20_000;
 
 type Props = {
   onReset: () => void;
   /** documento 2x6 já montado; nada é reprocessado aqui */
   strip: string | null;
+  /** compartilhamento já criado neste atendimento (reutilizado, nunca recriado) */
+  share?: Promise<ShareResult | null> | null;
+  onViewQr?: () => void;
 };
 
 type ReprintState = "idle" | "sending" | "done" | "error";
 
-export function DoneScreen({ onReset, strip }: Props) {
+export function DoneScreen({ onReset, strip, share, onViewQr }: Props) {
+  const [qrAvailable, setQrAvailable] = useState(false);
+  const checkShare = useServerFn(getPhotoShare);
   const [reprint, setReprint] = useState<ReprintState>("idle");
   const [seconds, setSeconds] = useState(AUTO_RESET_SECONDS);
   const resetRef = useRef(onReset);
@@ -35,6 +44,34 @@ export function DoneScreen({ onReset, strip }: Props) {
     }, 1000);
     return () => clearInterval(tick);
   }, []);
+
+  // VER QR só com compartilhamento válido: token existente, dentro das 24h e não excluído
+  useEffect(() => {
+    if (!share || !onViewQr) return;
+    let alive = true;
+    let res: ShareResult | null = null;
+    const verify = async () => {
+      if (!res) return;
+      if (Date.parse(res.expiresAt) <= Date.now()) return alive && setQrAvailable(false);
+      try {
+        const r = await checkShare({ data: { token: res.token } });
+        if (alive) setQrAvailable(!!r.ok);
+      } catch {
+        /* falha de rede: mantém o estado atual */
+      }
+    };
+    void share.then((r) => {
+      if (!alive || !r) return;
+      res = r;
+      setQrAvailable(Date.parse(r.expiresAt) > Date.now());
+      void verify();
+    });
+    const id = setInterval(() => void verify(), SHARE_CHECK_MS);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [share, onViewQr, checkShare]);
 
   const handleReprint = useCallback(() => {
     if (!strip || reprint !== "idle") return;
@@ -56,6 +93,8 @@ export function DoneScreen({ onReset, strip }: Props) {
       : reprint === "done"
         ? "Reimpresión enviada"
         : "Reimprimir";
+
+  const tile = qrAvailable ? "px-4! text-[1.85rem]! tracking-[0.04em]!" : "";
 
   return (
     <>
@@ -82,10 +121,20 @@ export function DoneScreen({ onReset, strip }: Props) {
         </p>
       </div>
 
-      <div className="flex w-full max-w-[52rem] flex-col items-center gap-6">
-        <div className="flex w-full items-stretch gap-8">
+      <div className="flex w-full max-w-[60rem] flex-col items-center gap-6">
+        <div className={`flex w-full items-stretch ${qrAvailable ? "gap-6" : "gap-8"}`}>
+          {qrAvailable && onViewQr && (
+            <ActionTile
+              variant="ghost"
+              className={tile}
+              label="Ver QR"
+              onClick={() => onViewQr()}
+              icon={<QrCode className="h-16 w-16" strokeWidth={2.5} />}
+            />
+          )}
           <ActionTile
             variant="ghost"
+            className={tile}
             label={reprintLabel}
             disabled={!strip || reprint !== "idle"}
             completed={reprint === "done"}
@@ -106,6 +155,7 @@ export function DoneScreen({ onReset, strip }: Props) {
           />
           <ActionTile
             variant="ghost"
+            className={tile}
             label="Inicio"
             onClick={() => resetRef.current()}
             icon={<Home className="h-16 w-16" strokeWidth={2.5} />}
