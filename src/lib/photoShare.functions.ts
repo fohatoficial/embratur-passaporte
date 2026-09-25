@@ -144,6 +144,38 @@ export const getPhotoShare = createServerFn({ method: "POST" })
     };
   });
 
+/** Só verifica o estado — não assina nenhuma URL. */
+export const getPhotoShareStatus = createServerFn({ method: "POST" })
+  .inputValidator((d) => tokenInput.parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row } = await supabaseAdmin
+      .from("photo_shares")
+      .select("expires_at, deleted_at")
+      .eq("token_hash", await sha256Hex(data.token))
+      .maybeSingle();
+    if (!row) return { status: "expired" as const };
+    if (row.deleted_at) return { status: "deleted" as const };
+    if (new Date(row.expires_at).getTime() <= Date.now()) return { status: "expired" as const };
+    return { status: "active" as const };
+  });
+
+/** URL assinada de curta duração, criada só no toque em COMPARTIR. */
+export const signPhotoShareStory = createServerFn({ method: "POST" })
+  .inputValidator((d) => tokenInput.parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin, share } = await findActive(data.token);
+    if (!share) return { ok: false as const };
+    const { data: signed, error } = await supabaseAdmin.storage
+      .from(SHARE_BUCKET)
+      .createSignedUrl(share.story_path, 60);
+    if (error || !signed?.signedUrl) {
+      console.error("sign-photo-share", "sign-failed");
+      return { ok: false as const };
+    }
+    return { ok: true as const, url: signed.signedUrl };
+  });
+
 export const deletePhotoShare = createServerFn({ method: "POST" })
   .inputValidator((d) => tokenInput.parse(d))
   .handler(async ({ data }) => {
