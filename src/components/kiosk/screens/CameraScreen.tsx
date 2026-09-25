@@ -23,15 +23,25 @@ const HINTS: Record<Framing, string> = {
 const MEASURE_MS = 600;
 /** medições sem rosto antes de liberar a contagem mesmo assim */
 const UNKNOWN_TOLERANCE = 6;
+/** espera antes do primeiro número, duração de cada número e número inicial */
+const LEAD_MS = 1800;
+const STEP_MS = 1000;
+const COUNT_FROM = 5;
 
 export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => void }) {
-  const { videoRef, status, capture, retry } = useCamera(true);
+  const { videoRef, status, freezeFrame, retry } = useCamera(true);
   const [count, setCount] = useState<number | null>(null);
   const [flash, setFlash] = useState(false);
   const [framing, setFraming] = useState<Framing>("unknown");
   const [armed, setArmed] = useState(false);
-  const captureRef = useRef(capture);
-  captureRef.current = capture;
+  const [frozen, setFrozen] = useState(false);
+  const [captureFailed, setCaptureFailed] = useState(false);
+  const [attemptKey, setAttemptKey] = useState(0);
+  const freezeRef = useRef(freezeFrame);
+  freezeRef.current = freezeFrame;
+  const captureCommittedRef = useRef(false);
+  const frozenCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const frozenHostRef = useRef<HTMLDivElement>(null);
 
   // medição leve do enquadramento (não altera a captura nem a foto final)
   useEffect(() => {
@@ -84,7 +94,8 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => vo
     };
   }, [status, videoRef]);
 
-  // a contagem só começa com vídeo reproduzindo e enquadramento adequado
+  // Controlador único da contagem (relógio monotônico performance.now + rAF).
+  // A captura acontece na mesma transição que remove o último número.
   useEffect(() => {
     if (status !== "live" || !armed) {
       setCount(null);
@@ -92,28 +103,84 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => vo
       return;
     }
 
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    timers.push(setTimeout(() => setCount(5), 1800));
-    for (let i = 1; i <= 4; i += 1) {
-      timers.push(setTimeout(() => setCount(5 - i), 1800 + i * 1000));
-    }
-    timers.push(
-      setTimeout(() => {
-        setCount(null);
-        setFlash(true);
-        // a captura começa de imediato; o flash apenas cobre a transição
-        const shotPromise = captureRef.current();
-        timers.push(
-          setTimeout(() => {
-            void shotPromise.then((shot) => {
-              if (shot) onCaptured(shot);
-            });
-          }, 450),
-        );
-      }, 1800 + 5000),
-    );
-    return () => timers.forEach(clearTimeout);
-  }, [status, armed, onCaptured]);
+    captureCommittedRef.current = false;
+    let cancelled = false;
+    let raf = 0;
+    let deliverTimer: ReturnType<typeof setTimeout> | undefined;
+    const start = performance.now();
+    let shown: number | null = null;
+
+    const loop = () => {
+      if (cancelled || captureCommittedRef.current) return;
+      const elapsed = performance.now() - start;
+      if (elapsed < LEAD_MS) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
+      const step = Math.floor((elapsed - LEAD_MS) / STEP_MS);
+      if (step < COUNT_FROM) {
+        const next = COUNT_FROM - step;
+        if (next !== shown) {
+          shown = next;
+          setCount(next);
+        }
+        raf = requestAnimationFrame(loop);
+        return;
+      }
+
+      // instante zero: copia os pixels sincronamente antes de qualquer outra coisa
+      captureCommittedRef.current = true;
+      const tEnd = start + LEAD_MS + COUNT_FROM * STEP_MS;
+      const canvas = freezeRef.current();
+      const tDraw = performance.now();
+      if (import.meta.env.DEV) {
+        console.debug(`[captura] fim do 1: ${tEnd.toFixed(1)}ms · drawImage: ${tDraw.toFixed(1)}ms · Δ ${(tDraw - tEnd).toFixed(1)}ms`);
+      }
+      setCount(null);
+      if (!canvas) {
+        setCaptureFailed(true);
+        return;
+      }
+      frozenCanvasRef.current = canvas;
+      setFrozen(true);
+      setFlash(true);
+      // a conversão (lenta) acontece depois de a prévia congelada aparecer
+      deliverTimer = setTimeout(() => {
+        if (cancelled) return;
+        const data = canvas.toDataURL("image/jpeg", 0.98);
+        if (import.meta.env.DEV) {
+          console.debug(`[captura] imagem pronta: ${(performance.now() - tDraw).toFixed(1)}ms após drawImage`);
+        }
+        onCaptured(data);
+      }, 450);
+    };
+
+    raf = requestAnimationFrame(loop);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      if (deliverTimer) clearTimeout(deliverTimer);
+    };
+  }, [status, armed, onCaptured, attemptKey]);
+
+  // mostra o quadro congelado no lugar do vídeo
+  useEffect(() => {
+    const host = frozenHostRef.current;
+    const canvas = frozenCanvasRef.current;
+    if (!frozen || !host || !canvas) return;
+    canvas.className = "absolute inset-0 h-full w-full object-cover";
+    host.replaceChildren(canvas);
+    videoRef.current?.pause();
+    return () => host.replaceChildren();
+  }, [frozen, videoRef]);
+
+  const retryCapture = () => {
+    setCaptureFailed(false);
+    setFrozen(false);
+    setFlash(false);
+    frozenCanvasRef.current = null;
+    setAttemptKey((k) => k + 1);
+  };
 
   const intense = count !== null && count <= 3;
   const guidance = intense ? HINTS.ok : HINTS[framing];
@@ -164,9 +231,11 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => vo
             </div>
           )}
 
-          {status === "live" && <FaceFrameGuide ok={intense || framing === "ok"} />}
+          <div ref={frozenHostRef} className={frozen ? "absolute inset-0" : "hidden"} />
 
-          {status === "live" && (
+          {status === "live" && !frozen && <FaceFrameGuide ok={intense || framing === "ok"} />}
+
+          {status === "live" && !frozen && !captureFailed && (
             <div className="absolute inset-x-0 bottom-10 flex flex-col items-center gap-6">
               {count !== null && (
                 <span
@@ -183,6 +252,17 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => vo
               <span className="font-display rounded-full bg-brasil-blue-dark/70 px-10 py-4 text-[1.75rem] font-black uppercase tracking-[0.15em]">
                 {guidance}
               </span>
+            </div>
+          )}
+
+          {captureFailed && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-12 bg-brasil-blue-deep px-14 text-center">
+              <p className="font-display text-[3.25rem] font-black uppercase leading-tight">
+                No pudimos tomar la foto.
+              </p>
+              <TouchButton onClick={retryCapture} className="text-[2.5rem]">
+                Intentar de nuevo
+              </TouchButton>
             </div>
           )}
 
