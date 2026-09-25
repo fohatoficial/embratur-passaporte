@@ -27,7 +27,9 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
   const [name, setName] = useState("");
   const [country, setCountry] = useState<CountryCode>("AR");
   const [phone, setPhone] = useState("");
-  const [marketing, setMarketing] = useState(false);
+  // novo formulário a cada atendimento (a tela é remontada): ambos começam marcados
+  const [privacy, setPrivacy] = useState(true);
+  const [marketing, setMarketing] = useState(true);
   const [touched, setTouched] = useState({ name: false, phone: false });
   const [attempted, setAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -37,7 +39,7 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
 
   const validName = normalizeName(name);
   const validPhone = normalizeWhatsapp(phone, country);
-  const canSubmit = !!validName && !!validPhone && !saving;
+  const canSubmit = !!validName && !!validPhone && privacy && !saving;
   const showNameError = (touched.name || attempted) && !validName;
   const showPhoneError = (touched.phone || attempted) && !validPhone;
   const dial = COUNTRIES.find((c) => c.code === country)?.dial ?? "";
@@ -46,14 +48,15 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
     blurActive();
     setName("");
     setPhone("");
-    setMarketing(false);
+    setPrivacy(true);
+    setMarketing(true);
     onBack();
   };
 
   const submit = async () => {
     setAttempted(true);
     blurActive();
-    if (!validName || !validPhone || submitting.current) return;
+    if (!validName || !validPhone || !privacy || submitting.current) return;
     submitting.current = true;
     setSaving(true);
     setFailed(false);
@@ -183,16 +186,14 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
           )}
         </div>
 
-        <Checkbox checked={marketing} disabled={saving} onChange={setMarketing}>
-          Quiero recibir novedades y comunicaciones de Visit Brasil por WhatsApp.
-        </Checkbox>
-
-        <p className="text-center text-[1.6rem] font-medium leading-snug text-muted-foreground">
-          Al tocar ACEPTAR Y CONTINUAR, confirmas que has leído el{" "}
+        <Checkbox checked={privacy} disabled={saving} onChange={setPrivacy}>
+          He leído el{" "}
           <button
             type="button"
             disabled={saving}
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               blurActive();
               setModal("notice");
             }}
@@ -200,8 +201,17 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
           >
             Aviso de Privacidad
           </button>{" "}
-          y autorizas el tratamiento de tus datos para realizar esta experiencia.
-        </p>
+          y autorizo el tratamiento de mis datos para realizar esta experiencia.
+        </Checkbox>
+        {!privacy && (
+          <span className="-mt-5 pl-[6.5rem] text-[1.5rem] font-medium text-brasil-yellow">
+            La autorización es necesaria para realizar la experiencia.
+          </span>
+        )}
+
+        <Checkbox checked={marketing} disabled={saving} onChange={setMarketing}>
+          Quiero recibir novedades y comunicaciones de Visit Brasil por WhatsApp.
+        </Checkbox>
 
         {failed && (
           <p role="alert" className="text-center text-[1.9rem] font-semibold text-brasil-yellow">
@@ -223,7 +233,7 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
             "Intentar de nuevo"
           ) : (
             <>
-              Aceptar y continuar
+              Continuar
               <ArrowRight className="h-12 w-12" strokeWidth={3} />
             </>
           )}
@@ -333,7 +343,7 @@ function PrivacyNotice({ onClose, onChannel }: { onClose: () => void; onChannel:
           .
         </p>
         <p>
-          Al tocar <strong>ACEPTAR Y CONTINUAR</strong>, declaras haber leído y comprendido este
+          Al marcar la autorización y tocar <strong>CONTINUAR</strong>, declaras haber leído y comprendido este
           aviso y autorizas el tratamiento de tus datos para las finalidades informadas.
         </p>
       </div>
