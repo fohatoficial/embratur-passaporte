@@ -94,6 +94,8 @@ export function DoneScreen({ onReset, strip, share, onViewQr }: Props) {
         ? "Reimpresión enviada"
         : "Reimprimir";
 
+  const tile = qrAvailable ? "px-4 text-[1.85rem] tracking-[0.04em]" : "";
+
   return (
     <>
       <BrasilLogo className="animate-fade-up w-[18rem]" />
@@ -124,6 +126,7 @@ export function DoneScreen({ onReset, strip, share, onViewQr }: Props) {
           {qrAvailable && onViewQr && (
             <ActionTile
               variant="ghost"
+              className={tile}
               label="Ver QR"
               onClick={() => onViewQr()}
               icon={<QrCode className="h-16 w-16" strokeWidth={2.5} />}
@@ -131,6 +134,7 @@ export function DoneScreen({ onReset, strip, share, onViewQr }: Props) {
           )}
           <ActionTile
             variant="ghost"
+            className={tile}
             label={reprintLabel}
             disabled={!strip || reprint !== "idle"}
             completed={reprint === "done"}
@@ -151,6 +155,7 @@ export function DoneScreen({ onReset, strip, share, onViewQr }: Props) {
           />
           <ActionTile
             variant="ghost"
+            className={tile}
             label="Inicio"
             onClick={() => resetRef.current()}
             icon={<Home className="h-16 w-16" strokeWidth={2.5} />}
