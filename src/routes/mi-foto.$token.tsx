@@ -2,14 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Download, Loader2, Share2, Trash2 } from "lucide-react";
+import { Loader2, Share2, Trash2 } from "lucide-react";
 import logoAsset from "@/assets/logo-brasil.png.asset.json";
 import ballAsset from "@/assets/ball.png.asset.json";
 import { deletePhotoShare, getPhotoShare } from "@/lib/photoShare.functions";
 import { TOKEN_PATTERN } from "@/lib/shareConfig";
 
 const title = "Tu foto está lista · Brasil 2027 | Visit Brasil";
-const description = "Descarga o comparte tu foto de pasaporte Brasil 2027 de la experiencia EMBRATUR en la FIT.";
+const description = "Comparte tu foto de pasaporte Brasil 2027 de la experiencia EMBRATUR en la FIT.";
 
 export const Route = createFileRoute("/mi-foto/$token")({
   head: () => ({
@@ -27,11 +27,7 @@ export const Route = createFileRoute("/mi-foto/$token")({
   component: MiFoto,
 });
 
-type Format = "story" | "post";
-const FILE_NAMES: Record<Format, string> = {
-  story: "mi-pasaporte-brasil-story.png",
-  post: "mi-pasaporte-brasil-publicacion.png",
-};
+const FILE_NAME = "mi-pasaporte-brasil-story.png";
 
 async function fetchBlob(url: string) {
   const res = await fetch(url);
@@ -55,8 +51,7 @@ function MiFoto() {
   const valid = TOKEN_PATTERN.test(token);
   const getShare = useServerFn(getPhotoShare);
   const removeShare = useServerFn(deletePhotoShare);
-  const [format, setFormat] = useState<Format>("story");
-  const [busy, setBusy] = useState<"download" | "share" | "delete" | null>(null);
+  const [busy, setBusy] = useState<"share" | "delete" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [deleted, setDeleted] = useState(false);
@@ -70,20 +65,7 @@ function MiFoto() {
   });
 
   const share = query.data?.ok ? query.data : null;
-  const src = share ? (format === "story" ? share.storyUrl : share.postUrl) : null;
-
-  const download = async () => {
-    if (!src || busy) return;
-    setBusy("download");
-    setNotice(null);
-    try {
-      saveBlob(await fetchBlob(src), FILE_NAMES[format]);
-    } catch {
-      setNotice("No pudimos descargar la imagen. Intenta de nuevo.");
-    } finally {
-      setBusy(null);
-    }
-  };
+  const src = share ? share.storyUrl : null;
 
   const shareFile = async () => {
     if (!src || busy) return;
@@ -91,7 +73,7 @@ function MiFoto() {
     setNotice(null);
     try {
       const blob = await fetchBlob(src);
-      const file = new File([blob], FILE_NAMES[format], { type: "image/png" });
+      const file = new File([blob], FILE_NAME, { type: "image/png" });
       if (navigator.canShare?.({ files: [file] })) {
         try {
           await navigator.share({ files: [file], title: "Mi pasaporte Brasil" });
@@ -99,8 +81,8 @@ function MiFoto() {
           /* cancelado pelo usuário */
         }
       } else {
-        saveBlob(blob, FILE_NAMES[format]);
-        setNotice("Imagen descargada. Ahora puedes compartirla desde Instagram.");
+        saveBlob(blob, FILE_NAME);
+        setNotice("Imagen guardada. Ahora puedes compartirla desde Instagram.");
       }
     } catch {
       setNotice("No pudimos preparar la imagen. Intenta de nuevo.");
@@ -171,53 +153,24 @@ function MiFoto() {
             <header className="flex flex-col gap-2">
               <h1 className="font-display text-4xl font-black uppercase leading-none">Tu foto está lista</h1>
               <p className="text-base font-medium text-muted-foreground">
-                Descárgala o compártela y lleva Brasil contigo.
+                Compártela y lleva Brasil contigo.
               </p>
             </header>
 
-            <div role="tablist" aria-label="Formato" className="grid w-full grid-cols-2 gap-1 rounded-full bg-secondary p-1">
-              {(["story", "post"] as const).map((f) => (
-                <button
-                  key={f}
-                  role="tab"
-                  aria-selected={format === f}
-                  onClick={() => setFormat(f)}
-                  className={`font-display rounded-full py-3 text-sm font-black uppercase tracking-widest transition-colors ${
-                    format === f ? "bg-brasil-yellow text-brasil-blue-dark" : "text-secondary-foreground"
-                  }`}
-                >
-                  {f === "story" ? "Historia" : "Publicación"}
-                </button>
-              ))}
-            </div>
-
             <img
-              key={format}
               src={src ?? undefined}
-              alt={format === "story" ? "Tu foto en formato historia" : "Tu foto en formato publicación"}
-              className={`animate-fade-up h-auto rounded-2xl shadow-[var(--shadow-touch)] ${
-                format === "story" ? "aspect-[9/16] w-[72%]" : "aspect-[4/5] w-[88%]"
-              }`}
+              alt="Tu foto en formato historia"
+              className="animate-fade-up aspect-[9/16] h-auto w-[72%] rounded-2xl shadow-[var(--shadow-touch)]"
             />
 
-            <div className="grid w-full grid-cols-2 gap-3">
-              <button
-                onClick={download}
-                disabled={!!busy}
-                className="font-display flex items-center justify-center gap-2 rounded-full border-2 border-border bg-secondary py-4 text-base font-black uppercase tracking-wider text-secondary-foreground disabled:opacity-60"
-              >
-                {busy === "download" ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
-                Descargar
-              </button>
-              <button
-                onClick={shareFile}
-                disabled={!!busy}
-                className="font-display flex items-center justify-center gap-2 rounded-full bg-primary py-4 text-base font-black uppercase tracking-wider text-primary-foreground disabled:opacity-60"
-              >
-                {busy === "share" ? <Loader2 className="h-5 w-5 animate-spin" /> : <Share2 className="h-5 w-5" />}
-                Compartir
-              </button>
-            </div>
+            <button
+              onClick={shareFile}
+              disabled={!!busy}
+              className="font-display flex w-full items-center justify-center gap-2 rounded-full bg-primary py-4 text-base font-black uppercase tracking-wider text-primary-foreground disabled:opacity-60"
+            >
+              {busy === "share" ? <Loader2 className="h-5 w-5 animate-spin" /> : <Share2 className="h-5 w-5" />}
+              Compartir
+            </button>
 
             {notice && (
               <p role="status" className="text-sm font-semibold text-brasil-yellow">

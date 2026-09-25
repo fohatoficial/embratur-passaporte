@@ -10,7 +10,7 @@ import { SHARE_BUCKET, SHARE_TTL_HOURS, TOKEN_PATTERN, shareUrlFor } from "./sha
 
 const MAX_BYTES = 8 * 1024 * 1024;
 const SIGNED_URL_SECONDS = 600;
-const SIZES = { story: [1080, 1920], post: [1080, 1350] } as const;
+const SIZES = { story: [1080, 1920] } as const;
 
 function toBase64Url(bytes: Uint8Array) {
   let bin = "";
@@ -40,12 +40,11 @@ export const createPhotoShare = createServerFn({ method: "POST" })
     const rawParticipant = data.get("participantId");
     const participantId = rawParticipant ? uuid.parse(rawParticipant) : null;
     const story = data.get("story");
-    const post = data.get("post");
-    if (!(story instanceof File) || !(post instanceof File)) throw new Error("missing-file");
-    for (const f of [story, post]) {
+    if (!(story instanceof File)) throw new Error("missing-file");
+    for (const f of [story]) {
       if (f.type !== "image/png" || f.size === 0 || f.size > MAX_BYTES) throw new Error("invalid-file");
     }
-    return { sessionId, participantId, story, post };
+    return { sessionId, participantId, story };
   })
   .handler(async ({ data }) => {
     const fail = (code: string) => {
@@ -55,9 +54,8 @@ export const createPhotoShare = createServerFn({ method: "POST" })
 
     const files = {
       story: new Uint8Array(await data.story.arrayBuffer()),
-      post: new Uint8Array(await data.post.arrayBuffer()),
     };
-    for (const key of ["story", "post"] as const) {
+    for (const key of ["story"] as const) {
       const size = pngSize(files[key]);
       if (!size || size[0] !== SIZES[key][0] || size[1] !== SIZES[key][1]) return fail("invalid-dimensions");
     }
@@ -86,13 +84,11 @@ export const createPhotoShare = createServerFn({ method: "POST" })
     const token = toBase64Url(tokenBytes);
     const tokenHash = await sha256Hex(token);
     const storyPath = `${shareId}/story.png`;
-    const postPath = `${shareId}/post.png`;
 
     const bucket = supabaseAdmin.storage.from(SHARE_BUCKET);
     const up1 = await bucket.upload(storyPath, files.story, { contentType: "image/png" });
-    const up2 = up1.error ? up1 : await bucket.upload(postPath, files.post, { contentType: "image/png" });
-    if (up1.error || up2.error) {
-      await bucket.remove([storyPath, postPath]);
+    if (up1.error) {
+      await bucket.remove([storyPath]);
       return fail("upload-failed");
     }
 
@@ -103,12 +99,11 @@ export const createPhotoShare = createServerFn({ method: "POST" })
       session_id: data.sessionId,
       token_hash: tokenHash,
       story_path: storyPath,
-      post_path: postPath,
       expires_at: expiresAt,
     });
     if (error) {
       // nenhum token incompleto: arquivos removidos
-      await bucket.remove([storyPath, postPath]);
+      await bucket.remove([storyPath]);
       return fail("save-failed");
     }
 
@@ -137,7 +132,7 @@ export const getPhotoShare = createServerFn({ method: "POST" })
     if (!share) return { ok: false as const };
     const { data: signed, error } = await supabaseAdmin.storage
       .from(SHARE_BUCKET)
-      .createSignedUrls([share.story_path, share.post_path], SIGNED_URL_SECONDS);
+      .createSignedUrls([share.story_path], SIGNED_URL_SECONDS);
     if (error || !signed || signed.some((s) => !s.signedUrl)) {
       console.error("get-photo-share", "sign-failed");
       return { ok: false as const };
@@ -145,7 +140,6 @@ export const getPhotoShare = createServerFn({ method: "POST" })
     return {
       ok: true as const,
       storyUrl: signed[0]!.signedUrl,
-      postUrl: signed[1]!.signedUrl,
       expiresAt: share.expires_at,
     };
   });
@@ -155,7 +149,7 @@ export const deletePhotoShare = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin, share } = await findActive(data.token);
     if (!share) return { ok: true as const };
-    await supabaseAdmin.storage.from(SHARE_BUCKET).remove([share.story_path, share.post_path]);
+    await supabaseAdmin.storage.from(SHARE_BUCKET).remove([share.story_path, ...(share.post_path ? [share.post_path] : [])]);
     const { error } = await supabaseAdmin
       .from("photo_shares")
       .update({ deleted_at: new Date().toISOString() })

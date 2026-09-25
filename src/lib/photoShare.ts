@@ -13,12 +13,11 @@ export async function startPhotoShare(
   participantId: string | null,
 ): Promise<ShareResult | null> {
   try {
-    const { story, post } = await buildSocialPhotoAssets(master);
+    const { story } = await buildSocialPhotoAssets(master);
     const form = new FormData();
     form.append("sessionId", sessionId);
     if (participantId) form.append("participantId", participantId);
     form.append("story", new File([story], "story.png", { type: "image/png" }));
-    form.append("post", new File([post], "post.png", { type: "image/png" }));
     const res = await createPhotoShare({ data: form });
     if (!res.ok) return null;
     return { token: res.token, url: res.url, expiresAt: res.expiresAt, previewUrl: URL.createObjectURL(story) };
