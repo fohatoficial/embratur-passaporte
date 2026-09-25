@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Camera, RotateCcw } from "lucide-react";
 import { BrasilLogo } from "../BrasilLogo";
 import { ImmersiveBrazilLoader } from "../ImmersiveBrazilLoader";
+import { KioskSpinner } from "../KioskSpinner";
 import { TouchButton } from "../TouchButton";
 import { buildPrintStrip } from "@/lib/buildPrintStrip";
 import { enqueuePrintJob, fetchJob, type PrintJobStatus } from "@/lib/printQueue";
@@ -10,51 +12,85 @@ type Props = {
   photo: string;
   /** devolve o documento 2x6 já montado para eventual reimpressão */
   onFinished: (strip: string | null) => void;
+  /** descarta só esta captura e volta à câmera, preservando o cadastro */
+  onRetake: () => void;
 };
 
 type Phase = "sending" | "queued" | "processing" | "sent" | "error";
+/** etapa que falhou — cada uma é repetida isoladamente */
+type FailStage = "strip" | "queue" | "network" | "printer";
 
-/** estado real do sistema — nenhuma etapa simulada */
-const headline: Record<Phase, string> = {
+const headline: Record<Exclude<Phase, "error">, string> = {
   sending: "Preparando la impresión…",
   queued: "Enviando a la estación…",
   processing: "Impresión solicitada.",
   sent: "Tu foto fue enviada a la impresora",
-  error: "No pudimos enviar tu foto",
 };
 
-/** tempo mínimo de exibição da narrativa */
+const failText: Record<FailStage, string> = {
+  strip: "No pudimos preparar el archivo de impresión.",
+  queue: "No pudimos enviar tu foto a la estación de impresión.",
+  network: "Sin conexión en este momento. Revisa la red e intenta de nuevo.",
+  printer: "La estación de impresión no pudo imprimir tu foto.",
+};
+
 const MIN_MS = 5000;
 
 /**
  * O totem não imprime: monta o documento 2x6 e o envia para a fila da
- * estação de impressão, acompanhando o status até "sent".
+ * estação, acompanhando o status até "sent". O compartilhamento digital
+ * corre em paralelo e nunca interfere aqui.
  */
-export function PrintingScreen({ photo, onFinished }: Props) {
+export function PrintingScreen({ photo, onFinished, onRetake }: Props) {
   const [phase, setPhase] = useState<Phase>("sending");
+  const [fail, setFail] = useState<FailStage | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [retrying, setRetrying] = useState(false);
+  // um ID por captura: toda nova tentativa reutiliza o mesmo trabalho
   const jobIdRef = useRef<string>(crypto.randomUUID());
   const stripRef = useRef<string | null>(null);
   const startedRef = useRef(Date.now());
   const doneRef = useRef(onFinished);
   doneRef.current = onFinished;
 
-
-  // envio (idempotente: mesma dedupe_key em cada tentativa)
   useEffect(() => {
     let cancelled = false;
     setPhase("sending");
+    setFail(null);
 
     void (async () => {
+      // 1. tira: gerada uma única vez
+      if (!stripRef.current) {
+        try {
+          stripRef.current = await buildPrintStrip(photo);
+        } catch {
+          if (!cancelled) {
+            setFail("strip");
+            setPhase("error");
+            setRetrying(false);
+          }
+          return;
+        }
+      }
+      // 2. fila: idempotente pelo mesmo ID (não duplica, recoloca se falhou)
       try {
-        if (!stripRef.current) stripRef.current = await buildPrintStrip(photo);
         const job = await enqueuePrintJob(jobIdRef.current, stripRef.current);
         if (cancelled) return;
-        setPhase(job.status === "pending" ? "queued" : mapStatus(job.status));
+        applyStatus(job.status);
       } catch {
-        if (!cancelled) setPhase("error");
+        if (cancelled) return;
+        setFail(typeof navigator !== "undefined" && !navigator.onLine ? "network" : "queue");
+        setPhase("error");
+      } finally {
+        if (!cancelled) setRetrying(false);
       }
     })();
+
+    function applyStatus(status: PrintJobStatus) {
+      const next = mapStatus(status);
+      if (next === "error") setFail("printer");
+      setPhase(next === "processing" || next === "sent" || next === "error" ? next : "queued");
+    }
 
     return () => {
       cancelled = true;
@@ -68,11 +104,14 @@ export function PrintingScreen({ photo, onFinished }: Props) {
     let cancelled = false;
 
     const apply = (status: PrintJobStatus) => {
-      if (!cancelled) setPhase(mapStatus(status));
+      if (cancelled) return;
+      const next = mapStatus(status);
+      if (next === "error") setFail("printer");
+      setPhase(next);
     };
 
     const channel = supabase
-      .channel(`print-job-${jobId}`)
+      .channel(`print-job-${jobId}-${attempt}`)
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "print_jobs", filter: `id=eq.${jobId}` },
@@ -89,9 +128,8 @@ export function PrintingScreen({ photo, onFinished }: Props) {
       clearInterval(poll);
       supabase.removeChannel(channel);
     };
-  }, [phase]);
+  }, [phase, attempt]);
 
-  // encerra a jornada após a confirmação, respeitando o tempo mínimo da narrativa
   useEffect(() => {
     if (phase !== "sent") return;
     const elapsed = Date.now() - startedRef.current;
@@ -100,37 +138,48 @@ export function PrintingScreen({ photo, onFinished }: Props) {
     return () => clearTimeout(timer);
   }, [phase]);
 
-  const retry = useCallback(() => setAttempt((a) => a + 1), []);
+  const retry = useCallback(() => {
+    if (retrying) return;
+    setRetrying(true);
+    setAttempt((a) => a + 1);
+  }, [retrying]);
+
+  const isError = phase === "error";
 
   return (
     <>
       <BrasilLogo className="w-[18rem]" />
 
       <div className="animate-fade-up flex flex-col items-center gap-14 text-center">
-        {phase === "error" || phase === "sent" ? (
+        {isError || phase === "sent" ? (
           <h1 className="font-display text-[3rem] font-black uppercase leading-tight">
-            {headline[phase]}
+            {isError ? "No pudimos enviar tu foto" : headline.sent}
           </h1>
         ) : (
-          <ImmersiveBrazilLoader
-            variant="printPreparation"
-            size={280}
-            label={headline[phase]}
-          />
+          <ImmersiveBrazilLoader variant="printPreparation" size={280} label={headline[phase]} />
         )}
         <p className="max-w-[44rem] text-[1.75rem] font-medium text-muted-foreground">
-          {phase === "error"
-            ? "Revisa la conexión y toca para intentar de nuevo."
+          {isError
+            ? failText[fail ?? "queue"]
             : phase === "sent"
               ? "Retira tu foto en la estación de impresión."
               : "Esto tardará solo unos segundos."}
         </p>
       </div>
 
-      {phase === "error" ? (
+      {isError ? (
         <div className="flex w-full max-w-[52rem] flex-col gap-8">
-          <TouchButton onClick={retry} className="text-[2.75rem]">
-            Intentar de nuevo
+          <TouchButton onClick={retry} disabled={retrying} className="text-[2.75rem]">
+            <span className="flex items-center justify-center gap-5">
+              {retrying ? <KioskSpinner size={48} /> : <RotateCcw className="h-12 w-12" strokeWidth={3} />}
+              {retrying ? "Intentando…" : "Intentar de nuevo"}
+            </span>
+          </TouchButton>
+          <TouchButton variant="ghost" onClick={onRetake} disabled={retrying} className="text-[2.75rem]">
+            <span className="flex items-center justify-center gap-5">
+              <Camera className="h-12 w-12" strokeWidth={3} />
+              Tomar otra foto
+            </span>
           </TouchButton>
         </div>
       ) : (

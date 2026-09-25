@@ -31,22 +31,27 @@ export function dataUrlToBlob(dataUrl: string): Blob {
 
 /**
  * Envia o documento de impressão (600x1800) para o bucket privado e cria o
- * registro da fila. A mesma `dedupeKey` pode ser reenviada sem duplicar.
+ * registro da fila. Idempotente por `jobId`: se o trabalho já existe, não
+ * reenvia nem duplica; se a estação o marcou como falho, apenas o recoloca
+ * na fila (mesmo ID, sem nova impressão paralela).
  */
 export async function enqueuePrintJob(jobId: string, strip: string): Promise<PrintJob> {
   const imagePath = `${STATION_ID}/${jobId}.jpg`;
 
+  const existing = await fetchJob(jobId);
+  if (existing) {
+    if (existing.status === "failed" || existing.status === "cancelled") {
+      await requeueJob(jobId);
+      return (await fetchJob(jobId)) ?? existing;
+    }
+    return existing;
+  }
+
   const upload = await supabase.storage
     .from(PRINT_BUCKET)
     .upload(imagePath, dataUrlToBlob(strip), { contentType: "image/jpeg", upsert: true });
-  if (upload.error) throw upload.error;
-
-  const existing = await supabase
-    .from("print_jobs")
-    .select("*")
-    .eq("dedupe_key", jobId)
-    .maybeSingle();
-  if (existing.data) return existing.data as PrintJob;
+  // arquivo já enviado numa tentativa anterior: segue para o registro
+  if (upload.error && !/exist|duplicate/i.test(upload.error.message)) throw upload.error;
 
   const inserted = await supabase
     .from("print_jobs")
@@ -60,7 +65,12 @@ export async function enqueuePrintJob(jobId: string, strip: string): Promise<Pri
     })
     .select("*")
     .single();
-  if (inserted.error) throw inserted.error;
+  if (inserted.error) {
+    // corrida com uma tentativa anterior que chegou a gravar
+    const again = await fetchJob(jobId);
+    if (again) return again;
+    throw inserted.error;
+  }
   return inserted.data as PrintJob;
 }
 
@@ -140,13 +150,13 @@ export async function markFailed(jobId: string, message: string) {
     .eq("id", jobId);
 }
 
-/** Recoloca um trabalho com falha na fila (ação manual do operador). */
+/** Recoloca um trabalho com falha na fila (operador ou INTENTAR DE NUEVO). */
 export async function requeueJob(jobId: string) {
   await supabase
     .from("print_jobs")
     .update({ status: "pending", error_message: null, failed_at: null })
     .eq("id", jobId)
-    .eq("status", "failed");
+    .in("status", ["failed", "cancelled"]);
 }
 
 export async function signedImageUrl(imagePath: string): Promise<string> {
