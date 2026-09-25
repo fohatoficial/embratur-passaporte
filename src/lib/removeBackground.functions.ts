@@ -51,6 +51,14 @@ export const removePhotoBackground = createServerFn({ method: "POST" })
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    // Se o visitante sair da tela e o navegador cancelar o pedido, encerra
+    // também a chamada externa: nada segue processando após a desconexão.
+    const onClientAbort = () => controller.abort();
+    request.signal.addEventListener("abort", onClientAbort, { once: true });
+    if (request.signal.aborted) {
+      clearTimeout(timer);
+      return { png: null, error: "client-aborted" };
+    }
 
     try {
       const res = await fetch(ENDPOINT, {
@@ -73,7 +81,9 @@ export const removePhotoBackground = createServerFn({ method: "POST" })
       const code =
         err instanceof Error
           ? err.name === "AbortError"
-            ? "photoroom-timeout"
+            ? request.signal.aborted
+              ? "client-aborted"
+              : "photoroom-timeout"
             : err.message
           : "photoroom-failed";
       // apenas o código técnico; nenhum dado da foto e nenhuma credencial
@@ -81,5 +91,6 @@ export const removePhotoBackground = createServerFn({ method: "POST" })
       return { png: null, error: code };
     } finally {
       clearTimeout(timer);
+      request.signal.removeEventListener("abort", onClientAbort);
     }
   });
