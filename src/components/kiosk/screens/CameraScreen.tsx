@@ -28,7 +28,15 @@ const LEAD_MS = 1800;
 const STEP_MS = 1000;
 const COUNT_FROM = 5;
 
-export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => void }) {
+export function CameraScreen({
+  onCaptured,
+  paused = false,
+}: {
+  onCaptured: (photo: string) => void;
+  paused?: boolean;
+}) {
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
   const { videoRef, status, freezeFrame, retry } = useCamera(true);
   const [count, setCount] = useState<number | null>(null);
   const [flash, setFlash] = useState(false);
@@ -107,11 +115,21 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => vo
     let cancelled = false;
     let raf = 0;
     let deliverTimer: ReturnType<typeof setTimeout> | undefined;
-    const start = performance.now();
+    let start = performance.now();
     let shown: number | null = null;
 
     const loop = () => {
       if (cancelled || captureCommittedRef.current) return;
+      // confirmação de saída aberta: segura a contagem e recomeça do zero
+      if (pausedRef.current) {
+        start = performance.now();
+        if (shown !== null) {
+          shown = null;
+          setCount(null);
+        }
+        raf = requestAnimationFrame(loop);
+        return;
+      }
       const elapsed = performance.now() - start;
       if (elapsed < LEAD_MS) {
         raf = requestAnimationFrame(loop);
@@ -145,14 +163,19 @@ export function CameraScreen({ onCaptured }: { onCaptured: (photo: string) => vo
       setFrozen(true);
       setFlash(true);
       // a conversão (lenta) acontece depois de a prévia congelada aparecer
-      deliverTimer = setTimeout(() => {
+      const deliver = () => {
         if (cancelled) return;
+        if (pausedRef.current) {
+          deliverTimer = setTimeout(deliver, 200);
+          return;
+        }
         const data = canvas.toDataURL("image/jpeg", 0.98);
         if (import.meta.env.DEV) {
           console.debug(`[captura] imagem pronta: ${(performance.now() - tDraw).toFixed(1)}ms após drawImage`);
         }
         onCaptured(data);
-      }, 450);
+      };
+      deliverTimer = setTimeout(deliver, 450);
     };
 
     raf = requestAnimationFrame(loop);

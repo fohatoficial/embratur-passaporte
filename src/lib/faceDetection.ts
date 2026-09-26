@@ -40,6 +40,16 @@ async function getDetector() {
   return detectorPromise;
 }
 
+/** descarta um detector que falhou para que a próxima tentativa crie outro */
+function discardDetector(detector: FaceDetector) {
+  detectorPromise = null;
+  try {
+    detector.close();
+  } catch {
+    // já inutilizado
+  }
+}
+
 /**
  * Detecta exatamente um rosto na captura original. Usado somente para
  * enquadramento — nunca altera a imagem.
@@ -52,7 +62,13 @@ export async function detectFace(canvas: HTMLCanvasElement): Promise<FaceBox> {
     throw new PhotoError("generic", "Detector de rosto indisponível.");
   }
 
-  const result = detector.detect(canvas);
+  let result;
+  try {
+    result = detector.detect(canvas);
+  } catch {
+    discardDetector(detector);
+    throw new PhotoError("generic", "Falha técnica do detector.");
+  }
   const found = (result.detections ?? []).filter((d) => d.boundingBox);
 
   if (found.length === 0) throw new PhotoError("no-face", "Nenhum rosto detectado.");
@@ -93,7 +109,14 @@ export async function measureFace(
 ): Promise<FaceMeasure | null> {
   try {
     const detector = await getDetector();
-    const found = (detector.detect(frame).detections ?? []).filter((d) => d.boundingBox);
+    let detections;
+    try {
+      detections = detector.detect(frame).detections ?? [];
+    } catch {
+      discardDetector(detector);
+      return null;
+    }
+    const found = detections.filter((d) => d.boundingBox);
     if (found.length !== 1) return null;
     const box = found[0]!.boundingBox!;
     const centerX = box.originX + box.width / 2;

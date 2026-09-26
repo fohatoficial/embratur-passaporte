@@ -12,7 +12,7 @@ const MIN_MS = 5000;
  * câmera é solicitada e inicializada em segundo plano. A prévia só é revelada
  * quando a câmera está pronta E o tempo mínimo terminou.
  */
-export function PreCaptureScreen({ onReady }: { onReady: () => void }) {
+export function PreCaptureScreen({ onReady, paused = false }: { onReady: () => void; paused?: boolean }) {
   const [minDone, setMinDone] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -46,8 +46,8 @@ export function PreCaptureScreen({ onReady }: { onReady: () => void }) {
 
   // as duas condições são sincronizadas aqui
   useEffect(() => {
-    if (minDone && cameraReady) readyRef.current();
-  }, [minDone, cameraReady]);
+    if (minDone && cameraReady && !paused) readyRef.current();
+  }, [minDone, cameraReady, paused]);
 
   return (
     <>
