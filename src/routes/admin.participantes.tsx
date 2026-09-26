@@ -44,7 +44,7 @@ function AdminPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-muted/40 font-sans text-foreground">
+    <div className="min-h-screen bg-paper-ink/5 font-sans text-paper-ink">
       {session === undefined ? (
         <Center><Loader2 className="size-8 animate-spin text-brasil-blue" /></Center>
       ) : session ? (
@@ -83,19 +83,19 @@ function LoginScreen() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-brasil-blue p-6">
-      <form onSubmit={submit} className="w-full max-w-sm rounded-2xl bg-card p-8 shadow-xl">
+      <form onSubmit={submit} className="w-full max-w-sm rounded-2xl bg-paper p-8 shadow-xl">
         <div className="mb-6 flex justify-center rounded-xl bg-brasil-blue p-4">
           <BrasilLogo className="w-40" />
         </div>
         <h1 className="text-center text-2xl font-black uppercase text-brasil-blue-dark">Painel da ativação</h1>
-        <p className="mt-1 text-center text-sm text-muted-foreground">Acesse para acompanhar os participantes cadastrados.</p>
+        <p className="mt-1 text-center text-sm text-paper-ink/60">Acesse para acompanhar os participantes cadastrados.</p>
         <label className="mt-6 block text-sm font-semibold">E-mail
           <input type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring" />
+            className="mt-1 w-full rounded-lg border border-paper-ink/20 bg-paper text-paper-ink px-3 py-2 outline-none focus:ring-2 focus:ring-brasil-blue" />
         </label>
         <label className="mt-4 block text-sm font-semibold">Senha
           <input type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring" />
+            className="mt-1 w-full rounded-lg border border-paper-ink/20 bg-paper text-paper-ink px-3 py-2 outline-none focus:ring-2 focus:ring-brasil-blue" />
         </label>
         {error && <p role="alert" className="mt-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
         <button disabled={loading} className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-brasil-yellow py-3 font-black uppercase text-brasil-blue-dark disabled:opacity-60">
@@ -119,12 +119,12 @@ function AdminGate({ session }: { session: Session }) {
   if (state !== "ok")
     return (
       <Center>
-        <div className="max-w-sm rounded-2xl bg-card p-8 text-center shadow">
+        <div className="max-w-sm rounded-2xl bg-paper p-8 text-center shadow">
           <h1 className="text-xl font-black uppercase text-brasil-blue-dark">{state === "denied" ? "Acesso não autorizado" : "Não foi possível verificar o acesso"}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{state === "denied" ? "Esta conta não tem permissão de administrador." : "Tente novamente em instantes."}</p>
+          <p className="mt-2 text-sm text-paper-ink/60">{state === "denied" ? "Esta conta não tem permissão de administrador." : "Tente novamente em instantes."}</p>
           <div className="mt-6 flex justify-center gap-2">
             {state === "error" && <button onClick={check} className="rounded-lg bg-brasil-yellow px-4 py-2 font-bold uppercase text-brasil-blue-dark">Tentar novamente</button>}
-            <button onClick={signOut} className="rounded-lg border border-input px-4 py-2 font-bold uppercase">Sair</button>
+            <button onClick={signOut} className="rounded-lg border border-paper-ink/20 px-4 py-2 font-bold uppercase">Sair</button>
           </div>
         </div>
       </Center>
@@ -282,8 +282,8 @@ function Dashboard({ email }: { email: string }) {
         <StatCard label="Cadastros hoje" value={stats?.today} />
         <StatCard label="Última hora" value={stats?.last_hour} />
         <StatCard label="Autorizam comunicações" value={stats?.marketing} hint={stats && stats.total ? `${Math.round((stats.marketing / stats.total) * 100)}%` : undefined} />
-        <div className="col-span-2 rounded-xl bg-card p-4 shadow-sm md:col-span-1">
-          <p className="text-xs font-bold uppercase text-muted-foreground">Por país</p>
+        <div className="col-span-2 rounded-xl bg-paper p-4 shadow-sm md:col-span-1">
+          <p className="text-xs font-bold uppercase text-paper-ink/60">Por país</p>
           <ul className="mt-2 max-h-24 space-y-1 overflow-y-auto text-sm">
             {stats?.countries.length ? stats.countries.map((c) => (
               <li key={c.code} className="flex items-center gap-2">
@@ -291,12 +291,12 @@ function Dashboard({ email }: { email: string }) {
                 <span className="mr-auto truncate">{c.name ?? c.code}</span>
                 <span className="font-bold">{c.count}</span>
               </li>
-            )) : <li className="text-muted-foreground">—</li>}
+            )) : <li className="text-paper-ink/60">—</li>}
           </ul>
         </div>
       </section>
 
-      <section className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-card p-4 shadow-sm md:grid-cols-4 xl:grid-cols-9">
+      <section className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-paper p-4 shadow-sm md:grid-cols-4 xl:grid-cols-9">
         <Field label="Buscar (nome, e-mail, WhatsApp)" wide>
           <input value={filters.search} onChange={(e) => set("search", e.target.value)} className={inputCls} placeholder="Buscar…" />
         </Field>
@@ -327,11 +327,11 @@ function Dashboard({ email }: { email: string }) {
           </select>
         </Field>
         <div className="col-span-2 flex items-end md:col-span-4 xl:col-span-9">
-          <button onClick={() => setFilters(EMPTY_FILTERS)} className="rounded-lg border border-input px-4 py-2 text-xs font-bold uppercase hover:bg-muted">Limpar filtros</button>
+          <button onClick={() => setFilters(EMPTY_FILTERS)} className="rounded-lg border border-paper-ink/20 px-4 py-2 text-xs font-bold uppercase hover:bg-paper-ink/10">Limpar filtros</button>
         </div>
       </section>
 
-      <section className="mt-4 overflow-hidden rounded-xl bg-card shadow-sm">
+      <section className="mt-4 overflow-hidden rounded-xl bg-paper shadow-sm">
         {error && (
           <div className="flex items-center justify-between gap-4 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             Não foi possível carregar os participantes.
@@ -353,14 +353,14 @@ function Dashboard({ email }: { email: string }) {
             <tbody>
               {rows === null && loading
                 ? Array.from({ length: 8 }).map((_, i) => (
-                    <tr key={i} className="border-b border-border">
-                      {Array.from({ length: 12 }).map((__, j) => <td key={j} className="px-3 py-3"><div className="h-3 animate-pulse rounded bg-muted" /></td>)}
+                    <tr key={i} className="border-b border-paper-ink/10">
+                      {Array.from({ length: 12 }).map((__, j) => <td key={j} className="px-3 py-3"><div className="h-3 animate-pulse rounded bg-paper-ink/10" /></td>)}
                     </tr>
                   ))
                 : rows && rows.length === 0
-                  ? <tr><td colSpan={12} className="px-3 py-16 text-center text-muted-foreground">Nenhum participante encontrado.</td></tr>
+                  ? <tr><td colSpan={12} className="px-3 py-16 text-center text-paper-ink/60">Nenhum participante encontrado.</td></tr>
                   : rows?.map((r) => (
-                      <tr key={r.id} className={`border-b border-border transition-colors duration-1000 ${fresh.has(r.id) ? "bg-brasil-yellow/25" : "hover:bg-muted/50"}`}>
+                      <tr key={r.id} className={`border-b border-paper-ink/10 transition-colors duration-1000 ${fresh.has(r.id) ? "bg-brasil-yellow/25" : "hover:bg-paper-ink/5"}`}>
                         <td className="whitespace-nowrap px-3 py-2">{fmtDateTime(r.created_at)}</td>
                         <td className="px-3 py-2 font-semibold">{r.name || "—"}</td>
                         <td className="whitespace-nowrap px-3 py-2">
@@ -378,47 +378,47 @@ function Dashboard({ email }: { email: string }) {
                         <td className="px-3 py-2"><YesNo v={r.marketing_opt_in} /></td>
                         <td className="whitespace-nowrap px-3 py-2">{fmtDateTime(r.privacy_accepted_at)}</td>
                         <td className="px-3 py-2">{r.privacy_notice_version || "—"}</td>
-                        <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground">{r.session_id}</td>
+                        <td className="px-3 py-2 font-mono text-[11px] text-paper-ink/60">{r.session_id}</td>
                         <td className="whitespace-nowrap px-3 py-2">{fmtDate(r.expires_at)}</td>
                       </tr>
                     ))}
             </tbody>
           </table>
         </div>
-        <footer className="flex flex-wrap items-center gap-3 border-t border-border px-4 py-3 text-sm">
-          <span className="mr-auto text-muted-foreground">{count} registro(s){loading && rows ? " · atualizando…" : ""}</span>
+        <footer className="flex flex-wrap items-center gap-3 border-t border-paper-ink/10 px-4 py-3 text-sm">
+          <span className="mr-auto text-paper-ink/60">{count} registro(s){loading && rows ? " · atualizando…" : ""}</span>
           <label className="flex items-center gap-2">Por página
-            <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="rounded border border-input bg-background px-2 py-1">
+            <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="rounded border border-paper-ink/20 bg-paper text-paper-ink px-2 py-1">
               {[25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
           </label>
-          <button disabled={page === 0} onClick={() => setPage((p) => p - 1)} className="rounded border border-input px-3 py-1 disabled:opacity-40">Anterior</button>
+          <button disabled={page === 0} onClick={() => setPage((p) => p - 1)} className="rounded border border-paper-ink/20 px-3 py-1 disabled:opacity-40">Anterior</button>
           <span>Página {page + 1} de {pages}</span>
-          <button disabled={page + 1 >= pages} onClick={() => setPage((p) => p + 1)} className="rounded border border-input px-3 py-1 disabled:opacity-40">Próxima</button>
+          <button disabled={page + 1 >= pages} onClick={() => setPage((p) => p + 1)} className="rounded border border-paper-ink/20 px-3 py-1 disabled:opacity-40">Próxima</button>
         </footer>
       </section>
     </div>
   );
 }
 
-const inputCls = "mt-1 w-full rounded-lg border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring";
+const inputCls = "mt-1 w-full rounded-lg border border-paper-ink/20 bg-paper text-paper-ink px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-brasil-blue";
 
 function Field({ label, wide, children }: { label: string; wide?: boolean; children: React.ReactNode }) {
-  return <label className={`block text-xs font-bold uppercase text-muted-foreground ${wide ? "col-span-2" : ""}`}>{label}{children}</label>;
+  return <label className={`block text-xs font-bold uppercase text-paper-ink/60 ${wide ? "col-span-2" : ""}`}>{label}{children}</label>;
 }
 
 function StatCard({ label, value, hint }: { label: string; value?: number | undefined; hint?: string | undefined }) {
   return (
-    <div className="rounded-xl bg-card p-4 shadow-sm">
-      <p className="text-xs font-bold uppercase text-muted-foreground">{label}</p>
+    <div className="rounded-xl bg-paper p-4 shadow-sm">
+      <p className="text-xs font-bold uppercase text-paper-ink/60">{label}</p>
       <p className="mt-1 text-3xl font-black text-brasil-blue-dark">{value ?? "—"}</p>
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      {hint && <p className="text-xs text-paper-ink/60">{hint}</p>}
     </div>
   );
 }
 
 function YesNo({ v }: { v: boolean }) {
-  return <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${v ? "bg-brasil-green/15 text-brasil-green" : "bg-muted text-muted-foreground"}`}>{v ? "Sí" : "No"}</span>;
+  return <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${v ? "bg-brasil-green/15 text-brasil-green" : "bg-paper-ink/10 text-paper-ink/60"}`}>{v ? "Sí" : "No"}</span>;
 }
 
 function RtBadge({ status }: { status: RtStatus }) {
