@@ -68,6 +68,51 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_export_log: {
+        Row: {
+          admin_user_id: string
+          exported_at: string
+          filters: Json
+          id: string
+          row_count: number
+        }
+        Insert: {
+          admin_user_id: string
+          exported_at?: string
+          filters?: Json
+          id?: string
+          row_count: number
+        }
+        Update: {
+          admin_user_id?: string
+          exported_at?: string
+          filters?: Json
+          id?: string
+          row_count?: number
+        }
+        Relationships: []
+      }
+      admin_users: {
+        Row: {
+          active: boolean
+          created_at: string
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       photo_shares: {
         Row: {
           created_at: string
@@ -151,9 +196,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_participant_stats: {
+        Args: {
+          p_age_max?: number
+          p_age_min?: number
+          p_country?: string
+          p_from?: string
+          p_marketing?: boolean
+          p_privacy?: boolean
+          p_search?: string
+          p_to?: string
+          p_version?: string
+        }
+        Returns: Json
+      }
       cleanup_activation_data: { Args: never; Returns: number }
       cleanup_photo_shares: { Args: never; Returns: number }
       cleanup_print_jobs: { Args: never; Returns: number }
+      is_active_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
