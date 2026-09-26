@@ -43,6 +43,13 @@
       "when": 1790332633720,
       "tag": "0005_photo_shares_retake_and_retention",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790421745748,
+      "tag": "0006_participants_origin_age_email",
+      "breakpoints": true
     }
   ]
 }

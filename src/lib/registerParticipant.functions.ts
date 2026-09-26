@@ -3,15 +3,21 @@ import { z } from "zod";
 import {
   COUNTRY_CODES,
   PRIVACY_NOTICE_VERSION,
+  normalizeAge,
+  normalizeEmail,
   normalizeName,
   normalizeWhatsapp,
 } from "./participant";
+import { originCountryName } from "./originCountries";
 
 const schema = z.object({
   sessionId: z.string().uuid(),
   name: z.string().max(200),
   whatsapp: z.string().max(40),
   country: z.enum(COUNTRY_CODES),
+  originCountry: z.string().regex(/^[A-Z]{2}$/),
+  age: z.number().int().min(1).max(120),
+  email: z.string().max(254),
   privacyAccepted: z.literal(true),
   marketingOptIn: z.boolean(),
 });
@@ -26,7 +32,10 @@ export const registerActivationParticipant = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const name = normalizeName(data.name);
     const e164 = normalizeWhatsapp(data.whatsapp, data.country);
-    if (!name || !e164) return { ok: false as const, error: "invalid" };
+    const originName = originCountryName(data.originCountry);
+    const age = normalizeAge(data.age);
+    const email = normalizeEmail(data.email);
+    if (!name || !e164 || !originName || !age || !email) return { ok: false as const, error: "invalid" };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const now = new Date().toISOString();
@@ -37,6 +46,10 @@ export const registerActivationParticipant = createServerFn({ method: "POST" })
         name,
         whatsapp_e164: e164,
         country_code: data.country,
+        country_of_origin_code: data.originCountry,
+        country_of_origin_name: originName,
+        age,
+        email,
         privacy_accepted_at: now,
         privacy_notice_version: PRIVACY_NOTICE_VERSION,
         marketing_opt_in: data.marketingOptIn,
