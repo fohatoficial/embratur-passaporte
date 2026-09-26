@@ -8,3 +8,6 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Decisões
+- Acesso admin: tabela `admin_users` + função `is_active_admin` usada nas políticas RLS — autorização no banco, nunca só no frontend.
