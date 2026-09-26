@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PrintStationRouteImport } from './routes/print-station'
-import { Route as StoryTestRouteImport } from './routes/story-test'
 import { Route as AdminParticipantesRouteImport } from './routes/admin.participantes'
 import { Route as MiFotoTokenRouteImport } from './routes/mi-foto.$token'
 
@@ -23,11 +22,6 @@ const IndexRoute = IndexRouteImport.update({
 const PrintStationRoute = PrintStationRouteImport.update({
   id: '/print-station',
   path: '/print-station',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StoryTestRoute = StoryTestRouteImport.update({
-  id: '/story-test',
-  path: '/story-test',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminParticipantesRoute = AdminParticipantesRouteImport.update({
@@ -44,14 +38,12 @@ const MiFotoTokenRoute = MiFotoTokenRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/print-station': typeof PrintStationRoute
-  '/story-test': typeof StoryTestRoute
   '/admin/participantes': typeof AdminParticipantesRoute
   '/mi-foto/$token': typeof MiFotoTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/print-station': typeof PrintStationRoute
-  '/story-test': typeof StoryTestRoute
   '/admin/participantes': typeof AdminParticipantesRoute
   '/mi-foto/$token': typeof MiFotoTokenRoute
 }
@@ -59,30 +51,18 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/print-station': typeof PrintStationRoute
-  '/story-test': typeof StoryTestRoute
   '/admin/participantes': typeof AdminParticipantesRoute
   '/mi-foto/$token': typeof MiFotoTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/print-station'
-    | '/story-test'
-    | '/admin/participantes'
-    | '/mi-foto/$token'
+  fullPaths: '/' | '/print-station' | '/admin/participantes' | '/mi-foto/$token'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/print-station'
-    | '/story-test'
-    | '/admin/participantes'
-    | '/mi-foto/$token'
+  to: '/' | '/print-station' | '/admin/participantes' | '/mi-foto/$token'
   id:
     | '__root__'
     | '/'
     | '/print-station'
-    | '/story-test'
     | '/admin/participantes'
     | '/mi-foto/$token'
   fileRoutesById: FileRoutesById
@@ -90,7 +70,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PrintStationRoute: typeof PrintStationRoute
-  StoryTestRoute: typeof StoryTestRoute
   AdminParticipantesRoute: typeof AdminParticipantesRoute
   MiFotoTokenRoute: typeof MiFotoTokenRoute
 }
@@ -109,13 +88,6 @@ declare module '@tanstack/react-router' {
       path: '/print-station'
       fullPath: '/print-station'
       preLoaderRoute: typeof PrintStationRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/story-test': {
-      id: '/story-test'
-      path: '/story-test'
-      fullPath: '/story-test'
-      preLoaderRoute: typeof StoryTestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/participantes': {
@@ -138,7 +110,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PrintStationRoute: PrintStationRoute,
-  StoryTestRoute: StoryTestRoute,
   AdminParticipantesRoute: AdminParticipantesRoute,
   MiFotoTokenRoute: MiFotoTokenRoute,
 }
