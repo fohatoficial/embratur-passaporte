@@ -50,6 +50,13 @@
       "when": 1790421745748,
       "tag": "0006_participants_origin_age_email",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790424035934,
+      "tag": "0007_admin_participants_panel",
+      "breakpoints": true
     }
   ]
 }
