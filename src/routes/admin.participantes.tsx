@@ -358,7 +358,7 @@ function Dashboard({ email }: { email: string }) {
                     </tr>
                   ))
                 : rows && rows.length === 0
-                  ? <tr><td colSpan={12} className="px-3 py-16 text-center text-paper-ink/60">Nenhum participante encontrado.</td></tr>
+                  ? <tr><td colSpan={11} className="px-3 py-16 text-center text-paper-ink/60">Nenhum participante encontrado.</td></tr>
                   : rows?.map((r) => (
                       <tr key={r.id} className={`border-b border-paper-ink/10 transition-colors duration-1000 ${fresh.has(r.id) ? "bg-brasil-yellow/25" : "hover:bg-paper-ink/5"}`}>
                         <td className="whitespace-nowrap px-3 py-2">{fmtDateTime(r.created_at)}</td>
