@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BootSplash } from "@/components/kiosk/BootSplash";
 import { KioskFrame } from "@/components/kiosk/KioskFrame";
+import { CancelSessionButton } from "@/components/kiosk/CancelSessionButton";
 import { KioskViewport } from "@/components/kiosk/KioskViewport";
 import { AttractScreen } from "@/components/kiosk/screens/AttractScreen";
 import { RegistrationScreen, type Participant } from "@/components/kiosk/screens/RegistrationScreen";
@@ -53,6 +54,9 @@ function Kiosk() {
   const [participant, setParticipant] = useState<Participant | null>(null);
   // compartilhamento digital: um por atendimento, independente da impressão
   const shareRef = useRef<Promise<ShareResult | null> | null>(null);
+  const [confirmExit, setConfirmExit] = useState(false);
+  // nova chave a cada atendimento: remonta as telas e invalida callbacks antigos
+  const [sessionKey, setSessionKey] = useState(0);
 
   const clearShare = useCallback(() => {
     const pending = shareRef.current;
@@ -103,8 +107,13 @@ function Kiosk() {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     resetRemoteCutout();
     releaseCamera();
+    setConfirmExit(false);
+    setSessionKey((k) => k + 1);
     setStep("attract");
   }, [clearShare]);
+
+  const cancellable =
+    step === "precapture" || step === "camera" || step === "processing" || step === "review";
 
   // limpeza ao desmontar: nada de foto guardada e câmera liberada
   useEffect(() => () => {
@@ -120,7 +129,15 @@ function Kiosk() {
     <>
     <BootSplash />
     <KioskViewport>
-      <KioskFrame>
+      <KioskFrame key={sessionKey}>
+        {cancellable && (
+          <CancelSessionButton
+            open={confirmExit}
+            onOpen={() => setConfirmExit(true)}
+            onStay={() => setConfirmExit(false)}
+            onExit={reset}
+          />
+        )}
         {step === "attract" && <AttractScreen onStart={() => setStep("register")} />}
         {step === "register" && (
           <RegistrationScreen
@@ -131,11 +148,12 @@ function Kiosk() {
             }}
           />
         )}
-        {step === "precapture" && <PreCaptureScreen onReady={() => setStep("camera")} />}
-        {step === "camera" && <CameraScreen onCaptured={handleCaptured} />}
+        {step === "precapture" && <PreCaptureScreen paused={confirmExit} onReady={() => setStep("camera")} />}
+        {step === "camera" && <CameraScreen paused={confirmExit} onCaptured={handleCaptured} />}
         {step === "processing" && capture && (
           <ProcessingScreen
             capture={capture}
+            paused={confirmExit}
             onDone={(processed) => {
               setPhoto(processed);
               setStep("review");
