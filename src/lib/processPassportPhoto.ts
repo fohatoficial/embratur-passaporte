@@ -229,6 +229,10 @@ function compositeOnWhiteBackground(person: HTMLCanvasElement): HTMLCanvasElemen
   return canvas;
 }
 
+/** Recorte RGBA 1440x1440 (antes do fundo branco), indexado pela imagem mestre. */
+const transparentCache = new Map<string, string>();
+export const transparentPersonFor = (master: string) => transparentCache.get(master) ?? null;
+
 const exportFinalJpeg = (canvas: HTMLCanvasElement) => canvas.toDataURL("image/jpeg", 0.94);
 
 /**
@@ -271,10 +275,16 @@ export async function processPassportPhoto(
   if (person !== scaled) dispose(person);
   const sharpened = sharpen(scaled, params);
 
-  // 6. composição sobre branco puro e exportação única
+  // 6. versão transparente (mesmo enquadramento/tratamento) para a arte social
+  const transparent = sharpened.toDataURL("image/png");
+
+  // 7. composição sobre branco puro e exportação única (impressão)
   const composed = compositeOnWhiteBackground(sharpened);
   dispose(sharpened);
-  return exportFinalJpeg(composed);
+  const master = exportFinalJpeg(composed);
+  transparentCache.clear();
+  transparentCache.set(master, transparent);
+  return master;
 }
 
 export const isPhotoError = (e: unknown): e is PhotoError => e instanceof PhotoError;
