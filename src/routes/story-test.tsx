@@ -23,7 +23,7 @@ function makeTestPhoto(): string {
   x.fillStyle = "#2b4a8a";
   x.beginPath();
   x.moveTo(340, 1440);
-  x.quadraticCurve(720, 980, 1100, 1440);
+  x.quadraticCurveTo(720, 980, 1100, 1440);
   x.closePath();
   x.fill();
   return c.toDataURL("image/png");
