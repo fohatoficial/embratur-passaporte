@@ -4,7 +4,8 @@ import { AsYouType, type CountryCode } from "libphonenumber-js";
 import QRCode from "qrcode";
 import { useServerFn } from "@tanstack/react-start";
 import { registerActivationParticipant } from "@/lib/registerParticipant.functions";
-import { COUNTRIES, normalizeName, normalizeWhatsapp } from "@/lib/participant";
+import { COUNTRIES, normalizeAge, normalizeEmail, normalizeName, normalizeWhatsapp } from "@/lib/participant";
+import { OriginCountrySelect } from "../OriginCountrySelect";
 import { BrasilLogo } from "../BrasilLogo";
 import { DialCodeSelect } from "../DialCodeSelect";
 import { KioskSpinner } from "../KioskSpinner";
@@ -25,12 +26,15 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
   const register = useServerFn(registerActivationParticipant);
 
   const [name, setName] = useState("");
+  const [origin, setOrigin] = useState<string | null>(null);
+  const [age, setAge] = useState("");
+  const [email, setEmail] = useState("");
   const [country, setCountry] = useState<CountryCode>("AR");
   const [phone, setPhone] = useState("");
   // novo formulário a cada atendimento (a tela é remontada): ambos começam marcados
   const [privacy, setPrivacy] = useState(true);
   const [marketing, setMarketing] = useState(true);
-  const [touched, setTouched] = useState({ name: false, phone: false });
+  const [touched, setTouched] = useState({ name: false, origin: false, age: false, email: false, phone: false });
   const [attempted, setAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -39,14 +43,23 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
 
   const validName = normalizeName(name);
   const validPhone = normalizeWhatsapp(phone, country);
-  const canSubmit = !!validName && !!validPhone && privacy && !saving;
+  const validAge = normalizeAge(age);
+  const validEmail = normalizeEmail(email);
+  const allValid = !!validName && !!origin && !!validAge && !!validEmail && !!validPhone;
+  const canSubmit = allValid && privacy && !saving;
   const showNameError = (touched.name || attempted) && !validName;
+  const showOriginError = (touched.origin || attempted) && !origin;
+  const showAgeError = (touched.age || attempted) && !validAge;
+  const showEmailError = (touched.email || attempted) && !validEmail;
   const showPhoneError = (touched.phone || attempted) && !validPhone;
   const dial = COUNTRIES.find((c) => c.code === country)?.dial ?? "";
 
   const clearAndBack = () => {
     blurActive();
     setName("");
+    setOrigin(null);
+    setAge("");
+    setEmail("");
     setPhone("");
     setPrivacy(true);
     setMarketing(true);
@@ -56,7 +69,8 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
   const submit = async () => {
     setAttempted(true);
     blurActive();
-    if (!validName || !validPhone || !privacy || submitting.current) return;
+    if (!validName || !origin || !validAge || !validEmail || !validPhone || !privacy || submitting.current)
+      return;
     submitting.current = true;
     setSaving(true);
     setFailed(false);
@@ -67,6 +81,9 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
           name: validName,
           whatsapp: validPhone,
           country,
+          originCountry: origin,
+          age: validAge,
+          email: validEmail,
           privacyAccepted: true,
           marketingOptIn: marketing,
         },
@@ -81,7 +98,7 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
   };
 
   const inputBase =
-    "w-full rounded-[1.75rem] border-4 bg-card px-8 py-6 text-[2.5rem] font-semibold text-card-foreground outline-none transition-colors placeholder:text-card-foreground/40 focus:border-brasil-yellow focus:ring-4 focus:ring-brasil-yellow/40 disabled:opacity-60";
+    "w-full rounded-[1.75rem] border-4 bg-card px-8 py-5 text-[2.4rem] font-semibold text-card-foreground outline-none transition-colors placeholder:text-card-foreground/40 focus:border-brasil-yellow focus:ring-4 focus:ring-brasil-yellow/40 disabled:opacity-60";
 
   return (
     <>
@@ -98,25 +115,25 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
       <BrasilLogo className="w-[16rem]" />
 
       <form
-        className="flex w-full max-w-[56rem] flex-col gap-9"
+        className="flex w-full max-w-[56rem] flex-col gap-6"
         autoComplete="off"
         onSubmit={(e) => {
           e.preventDefault();
           void submit();
         }}
       >
-        <div className="flex flex-col gap-5 text-center">
-          <h1 className="font-display text-[4rem] font-black uppercase leading-[0.95]">
+        <div className="flex flex-col gap-4 text-center">
+          <h1 className="font-display text-[3.6rem] font-black uppercase leading-[0.95]">
             Antes de comenzar,
             <br />
             cuéntanos quién eres.
           </h1>
-          <p className="text-[2rem] font-medium leading-snug text-muted-foreground">
+          <p className="text-[1.85rem] font-medium leading-snug text-muted-foreground">
             Completa tus datos para vivir la experiencia y recibir tu fotografía impresa.
           </p>
         </div>
 
-        <label className="flex flex-col gap-3">
+        <label className="flex flex-col gap-2">
           <span className="font-display text-[1.75rem] font-black uppercase tracking-[0.12em]">
             Nombre
           </span>
@@ -143,7 +160,61 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
           )}
         </label>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex gap-5">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <span className="font-display text-[1.75rem] font-black uppercase tracking-[0.12em]">País de origen</span>
+            <OriginCountrySelect
+              value={origin}
+              disabled={saving}
+              invalid={showOriginError}
+              onChange={setOrigin}
+              onClose={() => setTouched((t) => ({ ...t, origin: true }))}
+            />
+            {showOriginError && <span className="text-[1.6rem] font-semibold text-brasil-yellow">Selecciona tu país de origen.</span>}
+          </div>
+          <label className="flex w-[13rem] shrink-0 flex-col gap-2">
+            <span className="font-display text-[1.75rem] font-black uppercase tracking-[0.12em]">Edad</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              name="kiosk-visitor-age"
+              value={age}
+              disabled={saving}
+              autoComplete="off"
+              enterKeyHint="next"
+              placeholder="Edad"
+              onChange={(e) => setAge(e.target.value.replace(/\D/g, "").slice(0, 3))}
+              onBlur={() => setTouched((t) => ({ ...t, age: true }))}
+              className={`${inputBase} text-center ${showAgeError ? "border-brasil-red" : "border-transparent"}`}
+            />
+            {showAgeError && <span className="text-[1.6rem] font-semibold text-brasil-yellow">Introduce una edad válida.</span>}
+          </label>
+        </div>
+
+        <label className="flex flex-col gap-2">
+          <span className="font-display text-[1.75rem] font-black uppercase tracking-[0.12em]">E-mail</span>
+          <input
+            type="email"
+            inputMode="email"
+            name="kiosk-visitor-email"
+            value={email}
+            disabled={saving}
+            maxLength={254}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            enterKeyHint="next"
+            placeholder="nombre@correo.com"
+            onChange={(e) => setEmail(e.target.value)}
+            onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+            className={`${inputBase} ${showEmailError ? "border-brasil-red" : "border-transparent"}`}
+          />
+          {showEmailError && <span className="text-[1.6rem] font-semibold text-brasil-yellow">Introduce un e-mail válido.</span>}
+        </label>
+
+        <div className="flex flex-col gap-2">
           <span className="font-display text-[1.75rem] font-black uppercase tracking-[0.12em]">
             WhatsApp
           </span>
@@ -181,7 +252,7 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
           </span>
           {showPhoneError && (
             <span className="text-[1.6rem] font-semibold text-brasil-yellow">
-              Revisa tu número de WhatsApp.
+              Introduce un número de WhatsApp válido.
             </span>
           )}
         </div>
@@ -205,12 +276,12 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
         </Checkbox>
         {!privacy && (
           <span className="-mt-5 pl-[6.5rem] text-[1.5rem] font-medium text-brasil-yellow">
-            La autorización es necesaria para realizar la experiencia.
+            Debes aceptar el Aviso de Privacidad para continuar.
           </span>
         )}
 
         <Checkbox checked={marketing} disabled={saving} onChange={setMarketing}>
-          Quiero recibir novedades y comunicaciones de Visit Brasil por WhatsApp.
+          Quiero recibir novedades y comunicaciones de Visit Brasil por e-mail y WhatsApp.
         </Checkbox>
 
         {failed && (
@@ -300,8 +371,8 @@ function PrivacyNotice({ onClose, onChannel }: { onClose: () => void; onChannel:
       </h2>
       <div className="flex flex-col gap-6 overflow-y-auto text-[1.8rem] leading-snug">
         <p>
-          Para participar en esta experiencia, recopilamos tu nombre, número de WhatsApp y
-          fotografía.
+          Para participar en esta experiencia, recopilamos tu nombre, país de origen, edad, e-mail,
+          número de WhatsApp y fotografía.
         </p>
         <p>
           Estos datos serán utilizados por{" "}
