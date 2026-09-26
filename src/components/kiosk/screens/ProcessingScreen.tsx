@@ -8,6 +8,7 @@ type Props = {
   capture: string;
   onDone: (processed: string) => void;
   onBackToCamera: () => void;
+  paused?: boolean;
 };
 
 const messages = {
@@ -21,7 +22,7 @@ type FailKind = keyof typeof messages;
 /** tempo mínimo de exibição da narrativa */
 const MIN_MS = 5000;
 
-export function ProcessingScreen({ capture, onDone, onBackToCamera }: Props) {
+export function ProcessingScreen({ capture, onDone, onBackToCamera, paused = false }: Props) {
   const [failed, setFailed] = useState<FailKind | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [minDone, setMinDone] = useState(false);
@@ -59,8 +60,8 @@ export function ProcessingScreen({ capture, onDone, onBackToCamera }: Props) {
 
   // avanço apenas quando as duas condições estão satisfeitas
   useEffect(() => {
-    if (ready && minDone) doneRef.current(ready);
-  }, [ready, minDone]);
+    if (ready && minDone && !paused) doneRef.current(ready);
+  }, [ready, minDone, paused]);
 
   const retry = useCallback(() => setAttempt((a) => a + 1), []);
 
@@ -89,7 +90,7 @@ export function ProcessingScreen({ capture, onDone, onBackToCamera }: Props) {
 
       {failed ? (
         <div className="flex w-full max-w-[52rem] flex-col gap-8">
-          {failed !== "multiple-faces" && (
+          {failed === "generic" && (
             <TouchButton onClick={retry} className="text-[2.75rem]">
               Intentar de nuevo
             </TouchButton>
