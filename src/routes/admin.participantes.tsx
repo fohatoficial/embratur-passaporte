@@ -44,7 +44,7 @@ function AdminPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-paper-ink/5 font-sans text-paper-ink">
+    <div className="fixed inset-0 overflow-auto select-text bg-paper font-sans text-paper-ink">
       {session === undefined ? (
         <Center><Loader2 className="size-8 animate-spin text-brasil-blue" /></Center>
       ) : session ? (
