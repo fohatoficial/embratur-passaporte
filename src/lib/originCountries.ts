@@ -10,10 +10,12 @@ export function originCountryName(code: string): string | null {
   return names.of(code) ?? null;
 }
 
+/** Argentina primeiro; demais em ordem alfabética pelo nome em espanhol. */
 export function originCountries(): { code: string; name: string }[] {
-  return ORIGIN_CODES.map((code) => ({ code, name: originCountryName(code) ?? code })).sort((a, b) =>
-    a.name.localeCompare(b.name, "es"),
-  );
+  const rest = ORIGIN_CODES.filter((c) => c !== "AR")
+    .map((code) => ({ code, name: originCountryName(code) ?? code }))
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+  return [{ code: "AR", name: originCountryName("AR") ?? "Argentina" }, ...rest];
 }
 
 export function originFlagUrl(code: string) {
