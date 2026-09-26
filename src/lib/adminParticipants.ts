@@ -80,9 +80,14 @@ export function normalizedFilters(f: ParticipantFilters) {
 }
 export type NormalizedFilters = ReturnType<typeof normalizedFilters>;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function applyFilters<Q extends Record<string, any>>(q: Q, n: NormalizedFilters): Q {
-  let r = q;
+/* eslint-disable @typescript-eslint/no-explicit-any */
+interface FilterBuilder {
+  or(f: string): any; eq(c: string, v: any): any; gte(c: string, v: any): any; lte(c: string, v: any): any;
+  lt(c: string, v: any): any; not(c: string, op: string, v: any): any; is(c: string, v: any): any;
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+export function applyFilters<Q extends FilterBuilder>(q: Q, n: NormalizedFilters): Q {
+  let r: Q = q;
   if (n.search) r = r.or(`name.ilike.*${n.search}*,email.ilike.*${n.search}*,whatsapp_e164.ilike.*${n.search}*`);
   if (n.country) r = r.eq("country_of_origin_code", n.country);
   if (n.ageMin != null) r = r.gte("age", n.ageMin);
