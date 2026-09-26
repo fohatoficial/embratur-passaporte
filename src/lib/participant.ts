@@ -1,7 +1,24 @@
 import { parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
 
 /** Versão do Aviso de Privacidad exibido no totem. */
-export const PRIVACY_NOTICE_VERSION = "2026-09-25";
+export const PRIVACY_NOTICE_VERSION = "2026-09-26";
+
+/** Inteiro de 1 a 120, somente dígitos. */
+export function normalizeAge(raw: string | number): number | null {
+  const s = String(raw).trim();
+  if (!/^\d{1,3}$/.test(s)) return null;
+  const n = Number(s);
+  return n >= 1 && n <= 120 ? n : null;
+}
+
+/** Remove espaços, converte para minúsculas e valida o formato. */
+export function normalizeEmail(raw: string): string | null {
+  const e = raw.trim().toLowerCase();
+  if (e.length < 5 || e.length > 254) return null;
+  if (!/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/.test(e)) return null;
+  if (e.includes("..")) return null;
+  return e;
+}
 
 export const COUNTRIES: { code: CountryCode; name: string; dial: string }[] = [
   { code: "AR", name: "Argentina", dial: "+54" },
