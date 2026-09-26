@@ -33,8 +33,14 @@ const HEADERS = [
 ];
 
 function cell(v: string | number | null | undefined) {
-  const s = v == null ? "" : String(v);
-  return /[";\r\n]/.test(s) || /^[=+\-@]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  let s = v == null ? "" : String(v);
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; // neutraliza fórmulas
+  return /[";\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+/** Força texto no Excel preservando o "+" (ex.: ="+5491..."). */
+function textCell(v: string) {
+  if (!v) return "";
+  return `"=""${v.replace(/"/g, "")}"""`;
 }
 
 /** Exporta CSV dos participantes filtrados. A RLS e is_active_admin garantem o acesso. */
@@ -66,17 +72,21 @@ export const exportParticipantsCsv = createServerFn({ method: "POST" })
       if (!page || page.length < PAGE) break;
     }
 
+    const WA = "\u0000wa";
+    const DIAL = "\u0000dial";
     const lines = [HEADERS.map(cell).join(";")];
     for (const r of rows) {
       lines.push(
         [
           fmtDate(r.created_at), fmtTime(r.created_at), r.name, r.country_of_origin_name,
-          r.country_of_origin_code, r.age, r.email, r.whatsapp_e164, dialCodeOf(r.country_code),
+          r.country_of_origin_code, r.age, r.email, WA, DIAL,
           r.privacy_accepted_at ? "Sim" : "Não", r.privacy_accepted_at ? `${fmtDate(r.privacy_accepted_at)} ${fmtTime(r.privacy_accepted_at)}` : "",
           r.privacy_notice_version, r.marketing_opt_in ? "Sim" : "Não",
           r.marketing_opt_in_at ? `${fmtDate(r.marketing_opt_in_at)} ${fmtTime(r.marketing_opt_in_at)}` : "",
           r.session_id, fmtDate(r.expires_at),
-        ].map(cell).join(";"),
+        ]
+          .map((v) => (v === WA ? textCell(r.whatsapp_e164) : v === DIAL ? textCell(dialCodeOf(r.country_code)) : cell(v)))
+          .join(";"),
       );
     }
 
