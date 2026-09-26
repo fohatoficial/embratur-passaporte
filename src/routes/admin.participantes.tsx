@@ -281,7 +281,7 @@ function Dashboard({ email }: { email: string }) {
         <StatCard label="Total de participantes" value={stats?.total} hint={filtered && stats ? `de ${stats.grand_total} no total geral` : stats ? "total geral" : undefined} />
         <StatCard label="Cadastros hoje" value={stats?.today} />
         <StatCard label="Última hora" value={stats?.last_hour} />
-        <StatCard label="Autorizam comunicações" value={stats?.marketing} hint={stats && stats.total ? `${Math.round((stats.marketing / stats.total) * 100)}%` : undefined} />
+        <StatCard label="Autorizam comunicações por e-mail" value={stats?.marketing} hint={stats && stats.total ? `${Math.round((stats.marketing / stats.total) * 100)}%` : undefined} />
         <div className="col-span-2 rounded-xl bg-paper p-4 shadow-sm md:col-span-1">
           <p className="text-xs font-bold uppercase text-paper-ink/60">Por país</p>
           <ul className="mt-2 max-h-24 space-y-1 overflow-y-auto text-sm">
@@ -297,7 +297,7 @@ function Dashboard({ email }: { email: string }) {
       </section>
 
       <section className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-paper p-4 shadow-sm md:grid-cols-4 xl:grid-cols-9">
-        <Field label="Buscar (nome, e-mail, WhatsApp)" wide>
+        <Field label="Buscar (nome, e-mail)" wide>
           <input value={filters.search} onChange={(e) => set("search", e.target.value)} className={inputCls} placeholder="Buscar…" />
         </Field>
         <Field label="País de origem">
@@ -310,7 +310,7 @@ function Dashboard({ email }: { email: string }) {
         <Field label="Idade máx."><input inputMode="numeric" value={filters.ageMax} onChange={(e) => set("ageMax", e.target.value.replace(/\D/g, "").slice(0, 3))} className={inputCls} /></Field>
         <Field label="Data inicial"><input type="date" value={filters.dateFrom} onChange={(e) => set("dateFrom", e.target.value)} className={inputCls} /></Field>
         <Field label="Data final"><input type="date" value={filters.dateTo} onChange={(e) => set("dateTo", e.target.value)} className={inputCls} /></Field>
-        <Field label="Comunicações">
+        <Field label="Comunicações por e-mail">
           <select value={filters.marketing} onChange={(e) => set("marketing", e.target.value as ParticipantFilters["marketing"])} className={inputCls}>
             <option value="all">Todos</option><option value="yes">Autorizou</option><option value="no">Não autorizou</option>
           </select>
@@ -346,7 +346,7 @@ function Dashboard({ email }: { email: string }) {
                 <Th sortKey="name" sort={sort} onSort={toggleSort}>Nome</Th>
                 <Th sortKey="country_of_origin_name" sort={sort} onSort={toggleSort}>País de origem</Th>
                 <Th sortKey="age" sort={sort} onSort={toggleSort}>Idade</Th>
-                <Th>E-mail</Th><Th>WhatsApp</Th><Th>Privacidade</Th><Th>Comunicações</Th>
+                <Th>E-mail</Th><Th>Privacidade</Th><Th>Comunicações (e-mail)</Th>
                 <Th>Aceite privacidade</Th><Th>Versão</Th><Th>Sessão</Th><Th>Expira em</Th>
               </tr>
             </thead>
@@ -358,7 +358,7 @@ function Dashboard({ email }: { email: string }) {
                     </tr>
                   ))
                 : rows && rows.length === 0
-                  ? <tr><td colSpan={12} className="px-3 py-16 text-center text-paper-ink/60">Nenhum participante encontrado.</td></tr>
+                  ? <tr><td colSpan={11} className="px-3 py-16 text-center text-paper-ink/60">Nenhum participante encontrado.</td></tr>
                   : rows?.map((r) => (
                       <tr key={r.id} className={`border-b border-paper-ink/10 transition-colors duration-1000 ${fresh.has(r.id) ? "bg-brasil-yellow/25" : "hover:bg-paper-ink/5"}`}>
                         <td className="whitespace-nowrap px-3 py-2">{fmtDateTime(r.created_at)}</td>
@@ -373,7 +373,6 @@ function Dashboard({ email }: { email: string }) {
                         </td>
                         <td className="px-3 py-2">{r.age ?? "—"}</td>
                         <td className="px-3 py-2">{r.email || "—"}</td>
-                        <td className="whitespace-nowrap px-3 py-2 font-mono text-xs">{r.whatsapp_e164 || "—"}</td>
                         <td className="px-3 py-2"><YesNo v={!!r.privacy_accepted_at} /></td>
                         <td className="px-3 py-2"><YesNo v={r.marketing_opt_in} /></td>
                         <td className="whitespace-nowrap px-3 py-2">{fmtDateTime(r.privacy_accepted_at)}</td>

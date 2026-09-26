@@ -1,7 +1,7 @@
 import { parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
 
 /** Versão do Aviso de Privacidad exibido no totem. */
-export const PRIVACY_NOTICE_VERSION = "2026-09-26";
+export const PRIVACY_NOTICE_VERSION = "2026-09-26b";
 
 /** Inteiro de 1 a 120, somente dígitos. */
 export function normalizeAge(raw: string | number): number | null {

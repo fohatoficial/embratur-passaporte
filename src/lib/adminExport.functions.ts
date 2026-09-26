@@ -5,7 +5,6 @@ import {
   EMPTY_FILTERS,
   PARTICIPANT_COLUMNS,
   applyFilters,
-  dialCodeOf,
   fmtDate,
   fmtTime,
   normalizedFilters,
@@ -27,8 +26,8 @@ const filtersSchema = z.object({
 
 const HEADERS = [
   "Data do cadastro", "Hora do cadastro", "Nome", "País de origem", "Código ISO do país", "Idade",
-  "E-mail", "WhatsApp", "Código telefônico", "Autorização de privacidade", "Data do aceite de privacidade",
-  "Versão do aviso de privacidade", "Autorização para comunicações", "Data da autorização para comunicações",
+  "E-mail", "Autorização de privacidade", "Data do aceite de privacidade",
+  "Versão do aviso de privacidade", "Autorização para comunicações por e-mail", "Data da autorização para comunicações por e-mail",
   "Identificador da sessão", "Data de expiração",
 ];
 
@@ -37,12 +36,6 @@ function cell(v: string | number | null | undefined) {
   if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; // neutraliza fórmulas
   return /[";\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
-/** Força texto no Excel preservando o "+" (ex.: ="+5491..."). */
-function textCell(v: string) {
-  if (!v) return "";
-  return `"=""${v.replace(/"/g, "")}"""`;
-}
-
 /** Exporta CSV dos participantes filtrados. A RLS e is_active_admin garantem o acesso. */
 export const exportParticipantsCsv = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -72,20 +65,18 @@ export const exportParticipantsCsv = createServerFn({ method: "POST" })
       if (!page || page.length < PAGE) break;
     }
 
-    const WA = "\u0000wa";
-    const DIAL = "\u0000dial";
     const lines = [HEADERS.map(cell).join(";")];
     for (const r of rows) {
       lines.push(
         [
           fmtDate(r.created_at), fmtTime(r.created_at), r.name, r.country_of_origin_name,
-          r.country_of_origin_code, r.age, r.email, WA, DIAL,
+          r.country_of_origin_code, r.age, r.email,
           r.privacy_accepted_at ? "Sim" : "Não", r.privacy_accepted_at ? `${fmtDate(r.privacy_accepted_at)} ${fmtTime(r.privacy_accepted_at)}` : "",
           r.privacy_notice_version, r.marketing_opt_in ? "Sim" : "Não",
           r.marketing_opt_in_at ? `${fmtDate(r.marketing_opt_in_at)} ${fmtTime(r.marketing_opt_in_at)}` : "",
           r.session_id, fmtDate(r.expires_at),
         ]
-          .map((v) => (v === WA ? textCell(r.whatsapp_e164) : v === DIAL ? textCell(dialCodeOf(r.country_code)) : cell(v)))
+          .map(cell)
           .join(";"),
       );
     }

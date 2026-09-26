@@ -17,7 +17,7 @@ export type Database = {
       activation_participants: {
         Row: {
           age: number | null
-          country_code: string
+          country_code: string | null
           country_of_origin_code: string | null
           country_of_origin_name: string | null
           created_at: string
@@ -30,11 +30,11 @@ export type Database = {
           privacy_accepted_at: string
           privacy_notice_version: string
           session_id: string
-          whatsapp_e164: string
+          whatsapp_e164: string | null
         }
         Insert: {
           age?: number | null
-          country_code: string
+          country_code?: string | null
           country_of_origin_code?: string | null
           country_of_origin_name?: string | null
           created_at?: string
@@ -47,11 +47,11 @@ export type Database = {
           privacy_accepted_at: string
           privacy_notice_version: string
           session_id: string
-          whatsapp_e164: string
+          whatsapp_e164?: string | null
         }
         Update: {
           age?: number | null
-          country_code?: string
+          country_code?: string | null
           country_of_origin_code?: string | null
           country_of_origin_name?: string | null
           created_at?: string
@@ -64,7 +64,7 @@ export type Database = {
           privacy_accepted_at?: string
           privacy_notice_version?: string
           session_id?: string
-          whatsapp_e164?: string
+          whatsapp_e164?: string | null
         }
         Relationships: []
       }
