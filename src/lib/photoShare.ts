@@ -1,5 +1,4 @@
 import { buildSocialPhotoAssets } from "./buildSocialPhotoAssets";
-import { transparentPersonFor } from "./processPassportPhoto";
 import { createPhotoShare } from "./photoShare.functions";
 
 export type ShareResult = { token: string; url: string; expiresAt: string; previewUrl: string };
@@ -14,9 +13,7 @@ export async function startPhotoShare(
   participantId: string | null,
 ): Promise<ShareResult | null> {
   try {
-    const person = transparentPersonFor(master);
-    if (!person) return null;
-    const { story } = await buildSocialPhotoAssets(person);
+    const { story } = await buildSocialPhotoAssets(master);
     const form = new FormData();
     form.append("sessionId", sessionId);
     if (participantId) form.append("participantId", participantId);
