@@ -102,16 +102,13 @@ export function applyFilters<Q extends FilterBuilder>(q: Q, n: NormalizedFilters
 }
 
 export function statsArgs(n: NormalizedFilters) {
-  return {
-    p_search: n.search ?? undefined,
-    p_country: n.country ?? undefined,
-    p_age_min: n.ageMin ?? undefined,
-    p_age_max: n.ageMax ?? undefined,
-    p_from: n.from ?? undefined,
-    p_to: n.to ?? undefined,
-    p_marketing: n.marketing ?? undefined,
-    p_privacy: n.privacy ?? undefined,
-    p_version: n.version ?? undefined,
+  const entries: [string, unknown][] = [
+    ["p_search", n.search], ["p_country", n.country], ["p_age_min", n.ageMin], ["p_age_max", n.ageMax],
+    ["p_from", n.from], ["p_to", n.to], ["p_marketing", n.marketing], ["p_privacy", n.privacy], ["p_version", n.version],
+  ];
+  return Object.fromEntries(entries.filter(([, v]) => v != null)) as {
+    p_search?: string; p_country?: string; p_age_min?: number; p_age_max?: number; p_from?: string;
+    p_to?: string; p_marketing?: boolean; p_privacy?: boolean; p_version?: string;
   };
 }
 

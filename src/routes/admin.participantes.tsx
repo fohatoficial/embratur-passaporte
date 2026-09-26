@@ -234,7 +234,7 @@ function Dashboard({ email }: { email: string }) {
       const now = new Date();
       const p = new Intl.DateTimeFormat("en-CA", { timeZone: ADMIN_TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })
         .formatToParts(now).reduce<Record<string, string>>((a, x) => ({ ...a, [x.type]: x.value }), {});
-      const name = `participantes-embratur-fit-${p.year}-${p.month}-${p.day}-${p.hour}-${p.minute}.csv`;
+      const name = `participantes-embratur-fit-${p["year"]}-${p["month"]}-${p["day"]}-${p["hour"]}-${p["minute"]}.csv`;
       const url = URL.createObjectURL(new Blob([res.csv], { type: "text/csv;charset=utf-8" }));
       const a = document.createElement("a");
       a.href = url; a.download = name; a.click();
@@ -407,7 +407,7 @@ function Field({ label, wide, children }: { label: string; wide?: boolean; child
   return <label className={`block text-xs font-bold uppercase text-muted-foreground ${wide ? "col-span-2" : ""}`}>{label}{children}</label>;
 }
 
-function StatCard({ label, value, hint }: { label: string; value?: number; hint?: string }) {
+function StatCard({ label, value, hint }: { label: string; value?: number | undefined; hint?: string | undefined }) {
   return (
     <div className="rounded-xl bg-card p-4 shadow-sm">
       <p className="text-xs font-bold uppercase text-muted-foreground">{label}</p>
