@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { buildSocialPhotoAssets } from "@/lib/buildSocialPhotoAssets";
 
-export const Route = createFileRoute("/__story-test")({
+export const Route = createFileRoute("/story-test")({
   component: StoryTest,
 });
 
