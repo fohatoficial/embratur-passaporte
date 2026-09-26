@@ -16,8 +16,12 @@ export type Database = {
     Tables: {
       activation_participants: {
         Row: {
+          age: number | null
           country_code: string
+          country_of_origin_code: string | null
+          country_of_origin_name: string | null
           created_at: string
+          email: string | null
           expires_at: string
           id: string
           marketing_opt_in: boolean
@@ -29,8 +33,12 @@ export type Database = {
           whatsapp_e164: string
         }
         Insert: {
+          age?: number | null
           country_code: string
+          country_of_origin_code?: string | null
+          country_of_origin_name?: string | null
           created_at?: string
+          email?: string | null
           expires_at?: string
           id?: string
           marketing_opt_in?: boolean
@@ -42,8 +50,12 @@ export type Database = {
           whatsapp_e164: string
         }
         Update: {
+          age?: number | null
           country_code?: string
+          country_of_origin_code?: string | null
+          country_of_origin_name?: string | null
           created_at?: string
+          email?: string | null
           expires_at?: string
           id?: string
           marketing_opt_in?: boolean
