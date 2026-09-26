@@ -1,5 +1,3 @@
-import { COUNTRIES } from "./participant";
-
 export const ADMIN_TZ = "America/Argentina/Buenos_Aires";
 
 export type TriState = "all" | "yes" | "no";
@@ -30,14 +28,12 @@ export const EMPTY_FILTERS: ParticipantFilters = {
 };
 
 export const PARTICIPANT_COLUMNS =
-  "id, session_id, name, whatsapp_e164, country_code, country_of_origin_code, country_of_origin_name, age, email, privacy_accepted_at, privacy_notice_version, marketing_opt_in, marketing_opt_in_at, created_at, expires_at";
+  "id, session_id, name, country_of_origin_code, country_of_origin_name, age, email, privacy_accepted_at, privacy_notice_version, marketing_opt_in, marketing_opt_in_at, created_at, expires_at";
 
 export interface ParticipantRow {
   id: string;
   session_id: string;
   name: string;
-  whatsapp_e164: string;
-  country_code: string;
   country_of_origin_code: string | null;
   country_of_origin_name: string | null;
   age: number | null;
@@ -88,7 +84,7 @@ interface FilterBuilder {
 /* eslint-enable @typescript-eslint/no-explicit-any */
 export function applyFilters<Q extends FilterBuilder>(q: Q, n: NormalizedFilters): Q {
   let r: Q = q;
-  if (n.search) r = r.or(`name.ilike.*${n.search}*,email.ilike.*${n.search}*,whatsapp_e164.ilike.*${n.search}*`);
+  if (n.search) r = r.or(`name.ilike.*${n.search}*,email.ilike.*${n.search}*`);
   if (n.country) r = r.eq("country_of_origin_code", n.country);
   if (n.ageMin != null) r = r.gte("age", n.ageMin);
   if (n.ageMax != null) r = r.lte("age", n.ageMax);
@@ -127,8 +123,4 @@ export function fmtTime(iso: string | null | undefined) {
 }
 export function fmtDateTime(iso: string | null | undefined) {
   return iso ? `${fmtDate(iso)} ${fmtTime(iso)}` : "—";
-}
-
-export function dialCodeOf(country: string) {
-  return COUNTRIES.find((c) => c.code === country)?.dial ?? "";
 }

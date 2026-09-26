@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, X } from "lucide-react";
-import { AsYouType, type CountryCode } from "libphonenumber-js";
 import QRCode from "qrcode";
 import { useServerFn } from "@tanstack/react-start";
 import { registerActivationParticipant } from "@/lib/registerParticipant.functions";
-import { COUNTRIES, normalizeAge, normalizeEmail, normalizeName, normalizeWhatsapp } from "@/lib/participant";
+import { normalizeAge, normalizeEmail, normalizeName } from "@/lib/participant";
 import { OriginCountrySelect } from "../OriginCountrySelect";
 import { BrasilLogo } from "../BrasilLogo";
-import { DialCodeSelect } from "../DialCodeSelect";
 import { KioskSpinner } from "../KioskSpinner";
 
 const PRIVACY_URL = "https://embratur.com.br/institucional/ouvidoria/";
@@ -29,12 +27,10 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
   const [origin, setOrigin] = useState<string | null>(null);
   const [age, setAge] = useState("");
   const [email, setEmail] = useState("");
-  const [country, setCountry] = useState<CountryCode>("AR");
-  const [phone, setPhone] = useState("");
   // novo formulário a cada atendimento (a tela é remontada): ambos começam marcados
   const [privacy, setPrivacy] = useState(true);
   const [marketing, setMarketing] = useState(true);
-  const [touched, setTouched] = useState({ name: false, origin: false, age: false, email: false, phone: false });
+  const [touched, setTouched] = useState({ name: false, origin: false, age: false, email: false });
   const [attempted, setAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -42,17 +38,14 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
   const submitting = useRef(false);
 
   const validName = normalizeName(name);
-  const validPhone = normalizeWhatsapp(phone, country);
   const validAge = normalizeAge(age);
   const validEmail = normalizeEmail(email);
-  const allValid = !!validName && !!origin && !!validAge && !!validEmail && !!validPhone;
+  const allValid = !!validName && !!origin && !!validAge && !!validEmail;
   const canSubmit = allValid && privacy && !saving;
   const showNameError = (touched.name || attempted) && !validName;
   const showOriginError = (touched.origin || attempted) && !origin;
   const showAgeError = (touched.age || attempted) && !validAge;
   const showEmailError = (touched.email || attempted) && !validEmail;
-  const showPhoneError = (touched.phone || attempted) && !validPhone;
-  const dial = COUNTRIES.find((c) => c.code === country)?.dial ?? "";
 
   const clearAndBack = () => {
     blurActive();
@@ -60,7 +53,6 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
     setOrigin(null);
     setAge("");
     setEmail("");
-    setPhone("");
     setPrivacy(true);
     setMarketing(true);
     onBack();
@@ -69,7 +61,7 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
   const submit = async () => {
     setAttempted(true);
     blurActive();
-    if (!validName || !origin || !validAge || !validEmail || !validPhone || !privacy || submitting.current)
+    if (!validName || !origin || !validAge || !validEmail || !privacy || submitting.current)
       return;
     submitting.current = true;
     setSaving(true);
@@ -79,8 +71,6 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
         data: {
           sessionId,
           name: validName,
-          whatsapp: validPhone,
-          country,
           originCountry: origin,
           age: validAge,
           email: validEmail,
@@ -115,7 +105,7 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
       <BrasilLogo className="w-[16rem]" />
 
       <form
-        className="flex w-full max-w-[56rem] flex-col gap-6"
+        className="flex w-full max-w-[56rem] flex-col gap-8"
         autoComplete="off"
         onSubmit={(e) => {
           e.preventDefault();
@@ -214,49 +204,6 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
           {showEmailError && <span className="text-[1.6rem] font-semibold text-brasil-yellow">Introduce un e-mail válido.</span>}
         </label>
 
-        <div className="flex flex-col gap-2">
-          <span className="font-display text-[1.75rem] font-black uppercase tracking-[0.12em]">
-            WhatsApp
-          </span>
-          <div className="flex gap-4">
-            <DialCodeSelect
-              value={country}
-              disabled={saving}
-              onChange={(code) => {
-                setCountry(code);
-                setPhone("");
-              }}
-            />
-            <input
-              type="tel"
-              inputMode="tel"
-              name="kiosk-visitor-phone"
-              value={phone}
-              disabled={saving}
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-              enterKeyHint="done"
-              placeholder={country === "AR" ? "9 11 2345-6789" : country === "BR" ? "11 91234-5678" : "Número"}
-              onChange={(e) => {
-                const digits = e.target.value.replace(/\D/g, "").slice(0, 15);
-                setPhone(new AsYouType(country).input(digits));
-              }}
-              onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
-              aria-describedby="dial-code"
-              className={`${inputBase} ${showPhoneError ? "border-brasil-red" : "border-transparent"}`}
-            />
-          </div>
-          <span id="dial-code" className="sr-only">
-            Código {dial}
-          </span>
-          {showPhoneError && (
-            <span className="text-[1.6rem] font-semibold text-brasil-yellow">
-              Introduce un número de WhatsApp válido.
-            </span>
-          )}
-        </div>
-
         <Checkbox checked={privacy} disabled={saving} onChange={setPrivacy}>
           He leído el{" "}
           <button
@@ -281,7 +228,7 @@ export function RegistrationScreen({ onBack, onRegistered }: Props) {
         )}
 
         <Checkbox checked={marketing} disabled={saving} onChange={setMarketing}>
-          Quiero recibir novedades y comunicaciones de Visit Brasil por e-mail y WhatsApp.
+          Quiero recibir novedades y comunicaciones de Visit Brasil por e-mail.
         </Checkbox>
 
         {failed && (
@@ -371,8 +318,8 @@ function PrivacyNotice({ onClose, onChannel }: { onClose: () => void; onChannel:
       </h2>
       <div className="flex flex-col gap-6 overflow-y-auto text-[1.8rem] leading-snug">
         <p>
-          Para participar en esta experiencia, recopilamos tu nombre, país de origen, edad, e-mail,
-          número de WhatsApp y fotografía.
+          Para participar en esta experiencia, recopilamos tu nombre, país de origen, edad, e-mail y
+          fotografía.
         </p>
         <p>
           Estos datos serán utilizados por{" "}
